@@ -1,0 +1,8 @@
+{
+  "name": "Remix New UnburdenMe",
+  "description": "An interactive communication companion, and personal \u0026 professional workload management assistant. Relieves the sense of feeling overwhelmed by prioritising tasks and providing gentle emotional support reminders.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
