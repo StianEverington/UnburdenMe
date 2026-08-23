@@ -11,6 +11,7 @@ import { TriageResultsView } from './components/TriageResultsView';
 import { DataDigestWidget } from './components/DataDigestWidget';
 import { IntegratedCalendar } from './components/IntegratedCalendar';
 import { MicroSummaryWidget } from './components/MicroSummaryWidget';
+import { ToneShiftTool } from './components/ToneShiftTool';
 import { ProblemSolverWidget } from './components/ProblemSolverWidget';
 import { PrepToolWidget } from './components/PrepToolWidget';
 import { SavedHistoryDrawer } from './components/SavedHistoryDrawer';
@@ -23,16 +24,9 @@ import { PRESET_SCENARIOS, PresetScenario } from './lib/constants';
 import { FullTriagePayload, FullTriageResult, SavedTriageItem, ResetPromptSettings } from './types';
 import { Compass, RefreshCw } from 'lucide-react';
 
-declare global {
-  interface Window {
-    google?: any;
-    tokenClient?: any;
-  }
-}
-
 export default function App() {
   const [contextMode, setContextMode] = useState<'work' | 'personal' | 'hybrid'>('work');
-  const [activeTab, setActiveTab] = useState<'co-pilot' | 'priorities' | 'schedule' | 'micro-summary' | 'problem-solver' | 'prep-tool'>('co-pilot');
+  const [activeTab, setActiveTab] = useState<'co-pilot' | 'priorities' | 'schedule' | 'micro-summary' | 'tone-shift' | 'problem-solver' | 'prep-tool'>('co-pilot');
   const [selectedPreset, setSelectedPreset] = useState<PresetScenario | null>(null);
   const [prepToolInitialTitle, setPrepToolInitialTitle] = useState<string>('');
 
@@ -41,17 +35,6 @@ export default function App() {
   const [currentScenarioText, setCurrentScenarioText] = useState<string>(DEFAULT_SCENARIO_TEXT);
   const [currentChannel, setCurrentChannel] = useState<string>('Email');
   const [currentTone, setCurrentTone] = useState<string>('Assertive');
-
-  // Google Integration State
-  const [googleAccessToken, setGoogleAccessToken] = useState<string | null>(() => {
-    return localStorage.getItem('unburdenme_google_access_token');
-  });
-  const [syncedAccountEmail, setSyncedAccountEmail] = useState<string | null>(() => {
-    return localStorage.getItem('unburdenme_google_account_email');
-  });
-  const [liveCalendarEvents, setLiveCalendarEvents] = useState<any[]>([]);
-  const [liveEmails, setLiveEmails] = useState<any[]>([]);
-  const [isGoogleSyncing, setIsGoogleSyncing] = useState<boolean>(false);
 
   // Reset Prompt Settings & Modals State
   const [resetSettings, setResetSettings] = useState<ResetPromptSettings>(() => {
@@ -71,18 +54,6 @@ export default function App() {
   const [isResetSettingsOpen, setIsResetSettingsOpen] = useState<boolean>(false);
   const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState<boolean>(false);
   const [forceShowResetPrompt, setForceShowResetPrompt] = useState<boolean>(false);
-
-  // Load Google Identity Services Script dynamically
-  useEffect(() => {
-    const script = document.createElement('script');
-    script.src = 'https://accounts.google.com/gsi/client';
-    script.async = true;
-    script.defer = true;
-    document.body.appendChild(script);
-    return () => {
-      document.body.removeChild(script);
-    };
-  }, []);
 
   useEffect(() => {
     try {
@@ -111,104 +82,6 @@ export default function App() {
       console.warn('LocalStorage save failed', e);
     }
   }, [savedItems]);
-
-  // OAuth Google Sync & Permission Handler
-  const handleInitiateGoogleSync = (scopes: string[] = ['https://www.googleapis.com/auth/calendar.readonly', 'https://www.googleapis.com/auth/gmail.readonly']) => {
-    if (!window.google || !window.google.accounts) {
-      alert('Google Identity Services library is loading. Please try again in a moment.');
-      return;
-    }
-
-    const client = window.google.accounts.oauth2.initTokenClient({
-      client_id: 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com', // To be set in environment variables
-      scope: scopes.join(' '),
-      callback: async (response: any) => {
-        if (response.access_token) {
-          setGoogleAccessToken(response.access_token);
-          localStorage.setItem('unburdenme_google_access_token', response.access_token);
-          await fetchGoogleUserProfile(response.access_token);
-          await fetchLiveGoogleData(response.access_token);
-        }
-      },
-    });
-
-    client.requestAccessToken({ prompt: 'select_account' });
-  };
-
-  const fetchGoogleUserProfile = async (token: string) => {
-    try {
-      const res = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const profile = await res.json();
-      if (profile.email) {
-        setSyncedAccountEmail(profile.email);
-        localStorage.setItem('unburdenme_google_account_email', profile.email);
-      }
-    } catch (err) {
-      console.warn('Could not fetch user profile:', err);
-    }
-  };
-
-  const fetchLiveGoogleData = async (token: string) => {
-    setIsGoogleSyncing(true);
-    try {
-      // 1. Fetch Calendar Events
-      const now = new Date().toISOString();
-      const calRes = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${now}&maxResults=15&singleEvents=true&orderBy=startTime`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const calData = await calRes.json();
-      if (calData.items) {
-        setLiveCalendarEvents(calData.items);
-      }
-
-      // 2. Fetch Live Emails
-      const gmailRes = await fetch('https://www.googleapis.com/gmail/v1/users/me/messages?maxResults=10&q=category:primary', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const gmailData = await gmailRes.json();
-      
-      if (gmailData.messages) {
-        const emailDetails = await Promise.all(
-          gmailData.messages.map(async (msg: { id: string }) => {
-            const detailRes = await fetch(`https://www.googleapis.com/gmail/v1/users/me/messages/${msg.id}`, {
-              headers: { Authorization: `Bearer ${token}` }
-            });
-            return detailRes.json();
-          })
-        );
-        setLiveEmails(emailDetails);
-      }
-    } catch (err) {
-      console.warn('Failed fetching live Google data:', err);
-    } finally {
-      setIsGoogleSyncing(false);
-    }
-  };
-
-  const handleDisconnectGoogle = () => {
-    setGoogleAccessToken(null);
-    setSyncedAccountEmail(null);
-    setLiveCalendarEvents([]);
-    setLiveEmails([]);
-    localStorage.removeItem('unburdenme_google_access_token');
-    localStorage.removeItem('unburdenme_google_account_email');
-  };
-
-  const handleSelectEmailForSuggestion = (emailSnippet: string, subject: string, sender: string) => {
-    const formattedInput = `Email from ${sender}\nSubject: ${subject}\n\nContent:\n${emailSnippet}`;
-    setCurrentScenarioText(formattedInput);
-    setActiveTab('co-pilot');
-    
-    handleExecuteTriage({
-      user_input: formattedInput,
-      instruction: 'Draft a clear, professional response',
-      channel: 'Email',
-      context_type: contextMode,
-      desired_tone: currentTone
-    });
-  };
 
   // Helper function to fetch with retry for transient server connection issues
   const fetchWithRetry = async (url: string, options: RequestInit, retries = 2, delay = 300): Promise<Response> => {
@@ -276,11 +149,9 @@ export default function App() {
     }
   };
 
-  // On initial mount, attempt fetching live data if token exists
+  // On initial mount, keep the main workspace clean and blank until the user submits a request
   useEffect(() => {
-    if (googleAccessToken) {
-      fetchLiveGoogleData(googleAccessToken);
-    }
+    // Intentionally left blank for initial clean slate
   }, []);
 
   const handleSelectPreset = (preset: PresetScenario) => {
@@ -298,8 +169,8 @@ export default function App() {
         context_type: 'work',
         desired_tone: 'Assertive',
         metadata: {
-          calendar_events_count: liveCalendarEvents.length || 5,
-          unread_email_count: liveEmails.length || 20,
+          calendar_events_count: 5,
+          unread_email_count: 20,
           top_email_subject_lines: [
             'URGENT: Deliverable deadline confirmation',
             'Calendar synchronisation request'
@@ -367,7 +238,7 @@ export default function App() {
           onOpenSettings={() => setIsResetSettingsOpen(true)}
           forceShowPrompt={forceShowResetPrompt}
           onDismissForcePrompt={() => setForceShowResetPrompt(false)}
-          unreadCount={liveEmails.length || 12}
+          unreadCount={12}
           highPriorityCount={3}
         />
         
@@ -417,26 +288,12 @@ export default function App() {
 
         {/* TAB 2: Priorities */}
         {activeTab === 'priorities' && (
-          <DataDigestWidget
-            googleAccessToken={googleAccessToken}
-            syncedAccountEmail={syncedAccountEmail}
-            liveEmails={liveEmails}
-            isGoogleSyncing={isGoogleSyncing}
-            onConnectGoogle={() => handleInitiateGoogleSync()}
-            onDisconnectGoogle={handleDisconnectGoogle}
-            onSelectEmail={handleSelectEmailForSuggestion}
-          />
+          <DataDigestWidget />
         )}
 
         {/* TAB 4: Schedule */}
         {activeTab === 'schedule' && (
           <IntegratedCalendar
-            googleAccessToken={googleAccessToken}
-            syncedAccountEmail={syncedAccountEmail}
-            liveCalendarEvents={liveCalendarEvents}
-            isGoogleSyncing={isGoogleSyncing}
-            onConnectGoogle={() => handleInitiateGoogleSync(['https://www.googleapis.com/auth/calendar.readonly'])}
-            onDisconnectGoogle={handleDisconnectGoogle}
             onNavigateToPrepTool={(title) => {
               setPrepToolInitialTitle(title);
               setActiveTab('prep-tool');
@@ -447,6 +304,11 @@ export default function App() {
         {/* TAB 3: Micro Summary Engine */}
         {activeTab === 'micro-summary' && (
           <MicroSummaryWidget />
+        )}
+
+        {/* TAB 5: Tone Shift Re-Framer */}
+        {activeTab === 'tone-shift' && (
+          <ToneShiftTool />
         )}
 
         {/* TAB 6: Problem Solver */}
