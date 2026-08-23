@@ -26,7 +26,7 @@ import { Compass, RefreshCw } from 'lucide-react';
 
 export default function App() {
   const [contextMode, setContextMode] = useState<'work' | 'personal' | 'hybrid'>('work');
-  const [activeTab, setActiveTab] = useState<'co-pilot' | 'priorities' | 'schedule' | 'micro-summary' | 'tone-shift' | 'problem-solver' | 'prep-tool'>('co-pilot');
+  const [activeTab, setActiveTab] = useState<'co-pilot' | 'priorities' | 'schedule' | 'micro-summary' | 'problem-solver' | 'prep-tool'>('co-pilot');
   const [selectedPreset, setSelectedPreset] = useState<PresetScenario | null>(null);
   const [prepToolInitialTitle, setPrepToolInitialTitle] = useState<string>('');
 
@@ -222,8 +222,8 @@ export default function App() {
         onOpenHistory={() => setIsHistoryOpen(true)}
         onOpenResetSettings={() => setIsResetSettingsOpen(true)}
         onOpenPrivacyModal={() => setIsPrivacyModalOpen(true)}
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        activeTab={activeTab as any}
+        setActiveTab={setActiveTab as any}
       />
 
       {/* Main Container */}
@@ -306,11 +306,6 @@ export default function App() {
           <MicroSummaryWidget />
         )}
 
-        {/* TAB 5: Tone Shift Re-Framer */}
-        {activeTab === 'tone-shift' && (
-          <ToneShiftTool />
-        )}
-
         {/* TAB 6: Problem Solver */}
         {activeTab === 'problem-solver' && (
           <ProblemSolverWidget />
@@ -320,7 +315,7 @@ export default function App() {
         {activeTab === 'prep-tool' && (
           <PrepToolWidget
             initialActivity={prepToolInitialTitle}
-            onNavigateToTab={(tab) => setActiveTab(tab)}
+            onNavigateToTab={(tab) => setActiveTab(tab as any)}
           />
         )}
 
