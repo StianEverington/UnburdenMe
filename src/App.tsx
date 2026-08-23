@@ -351,8 +351,8 @@ export default function App() {
         onOpenHistory={() => setIsHistoryOpen(true)}
         onOpenResetSettings={() => setIsResetSettingsOpen(true)}
         onOpenPrivacyModal={() => setIsPrivacyModalOpen(true)}
-        activeTab={activeTab as any}
-        setActiveTab={setActiveTab as any}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
       />
 
       {/* Main Container */}
@@ -458,7 +458,7 @@ export default function App() {
         {activeTab === 'prep-tool' && (
           <PrepToolWidget
             initialActivity={prepToolInitialTitle}
-            onNavigateToTab={(tab) => setActiveTab(tab as any)}
+            onNavigateToTab={(tab) => setActiveTab(tab)}
           />
         )}
 
