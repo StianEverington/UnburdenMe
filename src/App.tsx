@@ -11,7 +11,6 @@ import { TriageResultsView } from './components/TriageResultsView';
 import { DataDigestWidget } from './components/DataDigestWidget';
 import { IntegratedCalendar } from './components/IntegratedCalendar';
 import { MicroSummaryWidget } from './components/MicroSummaryWidget';
-import { ToneShiftTool } from './components/ToneShiftTool';
 import { ProblemSolverWidget } from './components/ProblemSolverWidget';
 import { PrepToolWidget } from './components/PrepToolWidget';
 import { SavedHistoryDrawer } from './components/SavedHistoryDrawer';
