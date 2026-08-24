@@ -36,15 +36,12 @@ const getGeminiAI = () => {
 const SENSITIVE_DISCLAIMER_MESSAGE = 'Notice: This matter involves sensitive legal, HR, or clinical health themes. This engine provides executive workload organisation support and is not a substitute for formal HR, legal, or medical counsel. Please consult a qualified professional.';
 
 function generateFallbackResponse(user_input: string, instruction: string = 'Respond to this message', channel: string = 'Email', context_type: string = 'work', desired_tone: string = 'Assertive') {
-  const isPersonal = context_type === 'personal' || ['whatsapp', 'sms', 'family', 'friend'].some(k => user_input.toLowerCase().includes(k) || channel.toLowerCase().includes(k));
   const isSpoken = channel === 'Phone Call' || channel === 'Face-to-Face';
 
   // Extract bracketed sensitive info placeholders if any exist in user_input
   const maskedMatches = user_input.match(/\[[A-[#a-zA-Z0-9_\s-]+\]/g) || [];
-  const sensitivePlaceholders = Array.from(new Set(maskedMatches)).join(', ');
 
   const taskSnippet = user_input.length > 120 ? user_input.slice(0, 120) + '...' : user_input;
-  const outcomeText = instruction && instruction !== 'Respond to this message' ? instruction : 'Respond to this message';
 
   // Determine recommended next steps for Section 3 based on user input & instruction
   const lowerInput = (user_input + ' ' + instruction).toLowerCase();
@@ -53,78 +50,78 @@ function generateFallbackResponse(user_input: string, instruction: string = 'Res
   let fallbackStepsText = '';
   if (isSensitiveFallback) {
     fallbackStepsText = `#### Recommended Next Steps:
-1. Do not engage directly with the request or party involved until formal guidance is obtained.
-2. Seek advice from a qualified professional, doctor, HR representative, or appropriate authority.
-3. Keep an objective, dated record of all relevant communications for official reference.`;
+1. Hold off on replying or getting directly involved until you have proper advice.
+2. Reach out to a qualified expert, your doctor, HR, or the appropriate authority.
+3. Keep a clear, dated record of all messages and updates for reference.`;
   } else if (instruction && instruction !== 'Respond to this message') {
     fallbackStepsText = `#### Recommended Next Steps:
-1. Review the draft options to verify they incorporate your requested outcome: "${instruction}".
-2. Select and customize the draft option that best matches your timeline and boundary preference.
-3. Send or deliver your chosen response to establish clear expectations promptly.`;
+1. Check the draft options to make sure they match what you asked for: "${instruction}".
+2. Pick and edit the draft that best fits your timing and what you are comfortable with.
+3. Send or share your response so everyone is on the same page.`;
   } else {
     fallbackStepsText = `#### Recommended Next Steps:
-1. Review your current commitments to identify any immediate conflict with this request.
-2. Select and edit the draft option that best matches your preferred timeline and boundary.
-3. Send or deliver your chosen response to establish clear expectations promptly.`;
+1. Take a quick look at your schedule to see if this clashes with anything urgent.
+2. Pick and tweak the draft option that best fits your timing and boundaries.
+3. Send or share your reply so expectations are set clearly.`;
   }
 
   if (isSpoken) {
     return `### 1. OPTIONS OVERVIEW
 
-* **Option A: Direct Concrete Solution** - Fulfill request directly with concrete next steps.
-* **Option B: Phased Counter-Proposal** - Deliver core priority first with full resolution to follow.
-* **Option C: Defer to Next Opportunity** - Acknowledge receipt and complete at next opportunity.
+* **Option A: Clear & Direct Answer** - Offer a straightforward answer and address their request right away.
+* **Option B: Step-by-Step Plan** - Take care of the main priority first and schedule the rest for later.
+* **Option C: Postpone for Now** - Let them know you have received this and will get to it when you next have time.
 
 ---
 
 ### 2. EDITABLE DRAFTS
 
-#### Draft for Option A: Direct Concrete Solution
+#### Draft for Option A: Clear & Direct Answer
 \`\`\`text
 [SPOKEN OPENING LINE]
-"Hi [Name], thanks for connecting. I wanted to address your request directly regarding: ${taskSnippet}"
+"Hi [Name], thanks for catching up. I wanted to talk through what you sent over about: ${taskSnippet}"
 
 [CORE TALKING POINTS]
-• "I have reviewed the specifics and can take care of this for you right away."
-• ${instruction && instruction !== 'Respond to this message' ? `"Regarding your outcome preference: I will ${instruction.toLowerCase()}."` : `"Here is the concrete solution: I will complete the primary deliverable today."`}
+• "I have had a look through the details and can take care of this for you today."
+• ${instruction && instruction !== 'Respond to this message' ? `"Regarding what you needed: I will ${instruction.toLowerCase()}."` : `"Here is the main plan: I will complete the main task today."`}
 
 [HANDLING PUSHBACK]
-• "If there are any additional details needed, I can adjust as we go, but this resolves the primary item."
+• "If anything else pops up, we can adjust as we go, but this covers the important part."
 
 [VOCAL TONE & PACING TIP]
-Deliver with an ${desired_tone.toLowerCase()} and composed vocal tone. Keep steady pacing.
+Speak in an ${desired_tone.toLowerCase()} and steady voice. Keep your pace relaxed.
 \`\`\`
 
-#### Draft for Option B: Phased Counter-Proposal
+#### Draft for Option B: Step-by-Step Plan
 \`\`\`text
 [SPOKEN OPENING LINE]
-"Hi [Name], do you have two quick minutes to talk through our plan regarding this request?"
+"Hi [Name], do you have two quick minutes to talk through how we approach this?"
 
 [CORE TALKING POINTS]
-• "I saw the details for: ${taskSnippet}"
-• "I can complete the immediate core priority for you by [Date/Time], and follow up with the complete output shortly after."
+• "I saw your note regarding: ${taskSnippet}"
+• "I can get the main part done for you by [Date/Time], and I will finish the rest right after."
 
 [HANDLING PUSHBACK]
-• "This ensures we move forward on the crucial part right away without any bottleneck."
+• "This gets things moving straight away without holding anything up."
 
 [VOCAL TONE & PACING TIP]
-Maintain a collaborative and steady demeanor.
+Keep your tone warm, practical, and conversational.
 \`\`\`
 
-#### Draft for Option C: Defer to Next Opportunity
+#### Draft for Option C: Postpone for Now
 \`\`\`text
 [SPOKEN OPENING LINE]
-"Hi [Name], I received your message regarding ${taskSnippet} and wanted to confirm receipt."
+"Hi [Name], I got your message about ${taskSnippet} and just wanted to let you know I received it."
 
 [CORE TALKING POINTS]
-• "I am currently focused on ongoing priorities, but I will complete this at the next available opportunity."
-• "I will update you as soon as I begin working on it."
+• "I am focusing on a few pressing things right now, but I will get to this as soon as I have a clear window."
+• "I will drop you a line as soon as I pick it up."
 
 [HANDLING PUSHBACK]
-• "I will notify you immediately if an earlier window opens up."
+• "I will let you know straight away if I can free up time sooner."
 
 [VOCAL TONE & PACING TIP]
-Speak clearly and calmly with a direct, professional disposition.
+Speak clearly, calmly, and naturally.
 \`\`\`
 
 ---
@@ -132,51 +129,60 @@ Speak clearly and calmly with a direct, professional disposition.
 ### 3. CONSIDERATION / HUMAN CHECK
 ${fallbackStepsText}
 
-* **Focus Reminder** Whichever option you choose, remember to ensure it is the exact response you would like and give yourself time to relax`;
+* **Focus Reminder** Whichever option you choose, make sure it feels right to you and give yourself space to recharge.`;
   }
 
   // Written Channels (Email, WhatsApp, SMS, Letter, Chat)
   return `### 1. OPTIONS OVERVIEW
 
-* **Option A: Direct Concrete Solution** - Fulfill and answer the specific request directly with proposed resolution steps.
-* **Option B: Phased Delivery Counter-Offer** - Deliver core priorities first while establishing a manageable timeline for full completion.
-* **Option C: Defer to Next Opportunity** - Acknowledge receipt and state that you will complete this request at the next available opportunity.
+* **Option A: Clear & Direct Answer** - Reply directly to their request with a simple, helpful answer.
+* **Option B: Step-by-Step Plan** - Deal with the main priority today and set a realistic timeline for the rest.
+* **Option C: Postpone for Now** - Acknowledge their message and let them know you will pick it up when you are next free.
 
 ---
 
 ### 2. EDITABLE DRAFTS
 
-#### Draft for Option A: Direct Concrete Solution
+#### Draft for Option A: Clear & Direct Answer
 \`\`\`text
 Hi [Name],
 
-Thank you for reaching out regarding: ${taskSnippet}
+Thanks for getting in touch about: ${taskSnippet}
 
-I have reviewed the details and am pleased to provide a direct resolution. ${instruction && instruction !== 'Respond to this message' ? `As requested, ${instruction.toLowerCase()}.` : 'I will complete the required task and send across the final confirmation by [Date/Time].'}
+I have gone through the details and am happy to help with this. ${instruction && instruction !== 'Respond to this message' ? `As requested, ${instruction.toLowerCase()}.` : 'I will get this sorted and send over a quick update by [Date/Time].'}
 
-Please let me know if you need any further details.
+Let me know if you need anything else!
+
+Best,
+[Your Name]
 \`\`\`
 
-#### Draft for Option B: Phased Delivery Counter-Offer
+#### Draft for Option B: Step-by-Step Plan
 \`\`\`text
 Hi [Name],
 
-I am writing regarding your request: ${taskSnippet}
+Thanks for your message regarding: ${taskSnippet}
 
-I can address the core requirement immediately, and complete the full remaining output by [Date/Time].
+I can tackle the most urgent part right now, and I will have the rest wrapped up for you by [Date/Time].
 
-Please let me know if this adjusted plan works well for you.
+Let me know if that sounds like a good plan.
+
+Best,
+[Your Name]
 \`\`\`
 
-#### Draft for Option C: Defer to Next Opportunity
+#### Draft for Option C: Postpone for Now
 \`\`\`text
 Hi [Name],
 
-I received your request regarding: ${taskSnippet}
+I have received your message about: ${taskSnippet}
 
-I am acknowledging receipt and will complete this at my next available opportunity. I will follow up with you as soon as it is processed.
+Just letting you know I have seen this. I am tied up with a few priorities at the moment, but I will get to it at my next available opportunity and update you as soon as I do.
 
-Thank you for your patience.
+Thanks for your patience!
+
+Best,
+[Your Name]
 \`\`\`
 
 ---
@@ -184,7 +190,7 @@ Thank you for your patience.
 ### 3. CONSIDERATION / HUMAN CHECK
 ${fallbackStepsText}
 
-* **Focus Reminder** Whichever option you choose, remember to ensure it is the exact response you would like and give yourself time to relax`;
+* **Focus Reminder** Whichever option you choose, make sure it feels right to you and give yourself space to recharge.`;
 }
 
 // 1. Risk Classifier API
@@ -198,16 +204,16 @@ app.post('/api/triage/classify', async (req: Request, res: Response) => {
     const lower = user_input.toLowerCase();
     let category = 'STANDARD_WORKLOAD';
     let requires_human_disclaimer = false;
-    let reason = 'Standard workload and task prioritisation query.';
+    let reason = 'Standard workload and everyday communication request.';
 
     if (lower.includes('harass') || lower.includes('terminate') || lower.includes('fire') || lower.includes('discrimination') || lower.includes('grievance')) {
       category = 'SENSITIVE_HR';
       requires_human_disclaimer = true;
-      reason = 'Sensitive workplace grievance or HR issue detected.';
+      reason = 'Sensitive workplace issue or HR grievance flagged.';
     } else if (lower.includes('panic') || lower.includes('hospital') || lower.includes('breakdown') || lower.includes('cannot function') || lower.includes('physical harm')) {
       category = 'SEVERE_BURNOUT';
       requires_human_disclaimer = true;
-      reason = 'Severe distress or health concern detected.';
+      reason = 'High emotional distress or medical concern flagged.';
     }
 
     const apiKey = process.env.GEMINI_API_KEY;
@@ -218,16 +224,16 @@ app.post('/api/triage/classify', async (req: Request, res: Response) => {
           model: 'gemini-3.6-flash',
           contents: `Analyze this user query: "${user_input}"`,
           config: {
-            systemInstruction: `Analyze the user query and classify it into one of the following categories:
-- STANDARD_WORKLOAD: Deadlines, scheduling, email overload, prioritising tasks, personal calendar management, routine boundaries.
-- SENSITIVE_HR: Discrimination, harassment, formal grievances, firing/termination, contract disputes.
-- SEVERE_BURNOUT: References to physical harm, mental health crisis, extreme medical distress.
+            systemInstruction: `Analyze the user query and classify it into one of the following categories using simple human language:
+- STANDARD_WORKLOAD: Normal tasks, deadlines, email overload, calendar management, everyday boundaries.
+- SENSITIVE_HR: Workplace disputes, unfair treatment, contracts, firing, formal grievances.
+- SEVERE_BURNOUT: Mental health breakdown, severe distress, physical health issues.
 
 OUTPUT FORMAT (JSON ONLY):
 {
   "category": "STANDARD_WORKLOAD | SENSITIVE_HR | SEVERE_BURNOUT",
   "requires_human_disclaimer": true | false,
-  "reason": "short explanation"
+  "reason": "short explanation in natural, simple British English"
 }`,
             temperature: 0.0,
             topP: 0.95,
@@ -260,7 +266,7 @@ OUTPUT FORMAT (JSON ONLY):
     res.json({
       category: 'STANDARD_WORKLOAD',
       requires_human_disclaimer: false,
-      reason: 'Standard workload query.'
+      reason: 'Standard workload and communication request.'
     });
   }
 });
@@ -271,13 +277,13 @@ app.post('/api/triage/signal', async (req: Request, res: Response) => {
     const { calendar_events_count = 5, unread_email_count = 20, top_email_subject_lines = [], context_type = 'hybrid' } = req.body;
 
     const fallbackResponse = {
-      urgent_external_demands: 'High-priority stakeholder requests requiring focus between scheduled calendar commitments.',
-      key_stakeholder_actions: 'Immediate reviews needed on key project deliverables and budget sign-offs.',
-      ignore_later_items: `Routine newsletters, internal announcements, and ${Math.max(0, unread_email_count - 3)} low-priority items deferred for EOD processing.`,
+      urgent_external_demands: 'Important requests from others that need quick attention today.',
+      key_stakeholder_actions: 'A few key items needing your review or approval.',
+      ignore_later_items: `General updates, newsletters, and ${Math.max(0, unread_email_count - 3)} non-urgent items you can leave for later.`,
       raw_bullets: [
-        'Urgent External Demand: Primary stakeholder requests requiring immediate focus.',
-        'Key Stakeholder Action: Slide reviews and budget approvals flagged for review today.',
-        `Ignore / Process Later (${unread_email_count} items): Calendar events and non-essential emails batch processed later.`
+        'Urgent External Demand: Important requests from people waiting on your reply.',
+        'Key Stakeholder Action: Project updates and documents ready for your review.',
+        `Ignore / Process Later (${unread_email_count} items): Routine updates and newsletters you can deal with later.`
       ]
     };
 
@@ -287,21 +293,20 @@ app.post('/api/triage/signal', async (req: Request, res: Response) => {
         const ai = getGeminiAI();
         const response = await ai.models.generateContent({
           model: 'gemini-3.6-flash',
-          contents: `Workload Metadata (${context_type} context):
-- Calendar Events Count: ${calendar_events_count}
-- Unread Email / Message Count: ${unread_email_count}
-- Top Subject Lines: ${JSON.stringify(top_email_subject_lines)}`,
+          contents: `Workload Overview (${context_type} context):
+- Calendar Meetings/Events: ${calendar_events_count}
+- Unread Messages/Emails: ${unread_email_count}
+- Subject Lines: ${JSON.stringify(top_email_subject_lines)}`,
           config: {
-            systemInstruction: `You are an executive filtering tool. Analyze the user's workload metadata and return a concise, 3-bullet summary identifying high-priority items versus low-priority noise.
+            systemInstruction: `You are a helpful companion sorting through daily workload noise. Summarise the workload in 3 simple, human-sounding bullet points.
 RULES:
 - Exactly 3 bullet points starting with:
   1. Urgent External Demand:
   2. Key Stakeholder Action:
   3. Ignore / Process Later:
-- Highlight urgent external or stakeholder demands.
-- Group routine/internal updates into a single "Ignore / Process Later" category.
-- Do not make emotional comments or tell the user how to feel. Avoid using the word "stress".
-- Use British English spelling (e.g. organise, prioritise).`,
+- Use warm, plain, conversational British English (e.g. organise, prioritising).
+- Avoid robotic, corporate jargon, buzzwords, or overly formal executive phrasing.
+- Do not offer emotional unsolicited advice or tell the user how to feel. NEVER use the word "stress".`,
             temperature: 0.2,
             topP: 0.95,
           },
@@ -324,9 +329,9 @@ RULES:
   } catch (error: any) {
     console.error('Error in /api/triage/signal:', error);
     res.json({
-      urgent_external_demands: 'High-priority stakeholder requests requiring focus between scheduled commitments.',
-      key_stakeholder_actions: 'Immediate reviews needed on key deliverables.',
-      ignore_later_items: 'Routine updates and non-essential emails deferred for EOD processing.',
+      urgent_external_demands: 'Important messages needing quick attention today.',
+      key_stakeholder_actions: 'Key tasks and approvals to look over when free.',
+      ignore_later_items: 'Routine updates and newsletters deferred for later.',
       raw_bullets: []
     });
   }
@@ -336,7 +341,7 @@ RULES:
 app.post('/api/triage/reframe', async (req: Request, res: Response) => {
   try {
     const { user_input } = req.body;
-    const fallbackSentence = 'You cannot expand the working hours today, but you can choose the top priority deliverable to focus on.';
+    const fallbackSentence = 'You cannot add more hours to the day, but you can choose what to focus on first.';
 
     const apiKey = process.env.GEMINI_API_KEY;
     if (apiKey) {
@@ -346,13 +351,13 @@ app.post('/api/triage/reframe', async (req: Request, res: Response) => {
           model: 'gemini-3.6-flash',
           contents: `User Context: "${user_input}"`,
           config: {
-            systemInstruction: `Given a demanding workload or communication situation, output exactly ONE sentence that helps the user shift focus from external pressure to their immediate, actionable locus of control.
+            systemInstruction: `Give the user exactly ONE grounding sentence that helps them focus on what is in their direct control today.
 RULES:
 - Maximum 20 words.
-- No toxic positivity or clichés (e.g., "Just breathe!", "Everything happens for a reason").
-- Focus purely on prioritisation and personal agency.
-- Do NOT use the word "stress".
-- Use British English (e.g., prioritise, organisation).`,
+- Write naturally, like a thoughtful human friend.
+- NO corporate jargon, fluff, or clichés (e.g., "Take a deep breath!", "Everything happens for a reason").
+- NEVER use the word "stress".
+- Use natural British English spelling and phrasing (e.g., prioritising, behaviour).`,
             temperature: 0.6,
             topP: 0.95,
           },
@@ -374,7 +379,7 @@ RULES:
   } catch (error: any) {
     console.error('Error in /api/triage/reframe:', error);
     res.json({
-      grounding_sentence: 'Focus on your immediate locus of control and define your top deliverable first.',
+      grounding_sentence: 'Focus on what you can control right now and take things one step at a time.',
       word_count: 14
     });
   }
@@ -408,112 +413,103 @@ app.post('/api/triage/full', async (req: Request, res: Response) => {
 
     const lowerInput = user_input.toLowerCase();
     if (lowerInput.includes('harass') || lowerInput.includes('terminate') || lowerInput.includes('fire') || lowerInput.includes('discrimination') || lowerInput.includes('grievance')) {
-      classification = { category: 'SENSITIVE_HR', requires_human_disclaimer: true, reason: 'HR or contractual sensitivity detected.' };
+      classification = { category: 'SENSITIVE_HR', requires_human_disclaimer: true, reason: 'HR or legal dispute flagged.' };
     } else if (lowerInput.includes('panic') || lowerInput.includes('hospital') || lowerInput.includes('breakdown') || lowerInput.includes('cannot function')) {
-      classification = { category: 'SEVERE_BURNOUT', requires_human_disclaimer: true, reason: 'High distress detected.' };
+      classification = { category: 'SEVERE_BURNOUT', requires_human_disclaimer: true, reason: 'High distress or personal health concern flagged.' };
     }
 
     // 2. Default Reframer Grounding Sentence
-    let grounding_sentence = 'You cannot expand the working hours today, but you can choose the top priority deliverable to focus on.';
+    let grounding_sentence = 'You cannot add more hours to the day, but you can choose what to focus on first.';
 
     // 3. Draft Engine Prompt (Single Call)
     let draftOutputText = '';
     if (apiKey) {
       try {
         const promptContext = `
-[EXACT USER REQUEST / DESCRIPTION BOX INPUT]
+[EXACT USER REQUEST / MESSAGE CONTENT]
 "${user_input}"
 
-[RESPONSE OUTCOME INSTRUCTION FROM USER]
+[WHAT THE USER WANTS TO ACHIEVE / SPECIFIC OUTCOME INSTRUCTION]
 "${instruction || 'Respond to this message'}"
 
-[SELECTED USER VARIABLES]
-- Communication Channel: ${channel}
-- Context Sphere: ${context_type} (personal, work, or hybrid)
-- Desired Tone: ${desired_tone} (e.g., Assertive & Clear Boundary, Polite & Diplomatic, Formal Executive Style, Direct & Concise)
-${metadata ? `- Workload Metadata: ${metadata.calendar_events_count} meetings, ${metadata.unread_email_count} unread emails/chats` : ''}
+[SELECTED SETTINGS]
+- Medium / Channel: ${channel}
+- Context: ${context_type} (personal, work, or hybrid)
+- Desired Tone: ${desired_tone}
+${metadata ? `- Background Context: ${metadata.calendar_events_count} meetings scheduled today, ${metadata.unread_email_count} unread messages` : ''}
 
-[CRITICAL INSTRUCTIONS FOR GENERATING THE 3 RESPONSE CHOICES]
-1. ACCURATE & SPECIFIC TASK SOLUTIONS:
-   - Carefully read the exact task details, questions, or requests in the user description input box.
-   - All 3 response options and drafts MUST directly answer, read, and reply to the specific request, providing actual solutions reflecting the original input message.
-   - AT LEAST 2 OUT OF THE 3 CHOICES (e.g., Option A & Option B) MUST actively incorporate and solve the specific task or outcome requested in the user input and align with the [RESPONSE OUTCOME INSTRUCTION].
-   - THE 3RD CHOICE (Option C) can be a more generic/deferral option stating that the user will complete this at the next available opportunity.
-   - If the user provided a custom instruction in [RESPONSE OUTCOME INSTRUCTION] (other than the default "Respond to this message"), the suggested responses MUST tailor their choices to incorporate that specified instruction/outcome.
-2. SENSITIVE INFORMATION MASKING PRESERVATION: If the user input contains masked or redacted sensitive information (such as [Name], [Date], [Phone Number], [Client], [Order ID], [Amount], [REDACTED], [Address], etc.), you MUST keep those placeholders intact in all 3 generated draft outcome choices.
-3. CHANNEL SPECIFICITY:
-   - For written channels (Email, WhatsApp, SMS, Letter, Chat): Generate copy-pasteable written message drafts tailored to that specific medium.
-   - For spoken verbal channels (Phone Call, Face-to-Face): Format as spoken scripts with clear opening line, core verbal talking points, pushback handling, and spoken vocal tone advice.
-4. CONTEXT & TONE REFLECTION: All 3 drafts MUST strongly reflect the chosen Context (${context_type}) and Desired Tone (${desired_tone}).
-5. SECTION 2 BREVITY: Section 2 ("ACTIONABLE OPTIONS") MUST provide a brief, concise 1-sentence overview for each of the 3 choice options (Option A, Option B, Option C) to prevent cognitive overload.
-6. SECTION 3 RECOMMENDED NEXT STEPS: In Section 3 ("### 3. CONSIDERATION / HUMAN CHECK"), at the start of this section under the subheading, suggest up to 3 numbered brief next steps / recommendations (1., 2., 3., or 1., 2. if only 1 or 2 apply) that are specifically based on the original input written in the first box and the instructions written by the user. Ensure all recommendations are safe, ethical, and non-discriminatory. If the input touches on a sensitive topic (medical distress, HR dispute, legal trouble, harassment, self-harm, or safety issue), recommend NOT engaging directly and seeking advice from a qualified professional, doctor, HR representative, or appropriate authority.`;
+[CRITICAL INSTRUCTIONS FOR GENERATING THE 3 DRAFT OPTIONS]
+1. NATURAL HUMAN LANGUAGE & ZERO JARGON:
+   - Write completely naturally like a real human being speaking or writing to another human.
+   - ABSOLUTELY NO corporate buzzwords, stiff corporate speak, artificial AI terminology, or unnatural phrases (e.g. avoid words like "synergy", "paradigm", "leverage", "bandwidth", "alignment", "touch base", "delve", "foster").
+   - Match the requested [Desired Tone] (${desired_tone}) naturally without making it sound forced or mechanical.
+2. ACCURATE & SPECIFIC TASK SOLUTIONS:
+   - Carefully read the original request and the [WHAT THE USER WANTS TO ACHIEVE] instruction.
+   - All 3 choices MUST directly address the specific details of what was asked.
+   - At least 2 of the choices (e.g., Option A & Option B) MUST actively carry out and solve the specific task or request, incorporating the user's specific instruction/outcome.
+   - Option C can be a polite deferral explaining that the user will pick this up at their next available opportunity.
+3. PRESERVE PLACEHOLDERS: If the original message contains bracketed placeholders like [Name], [Date], [Amount], [Client], [Order ID], [REDACTED], keep them intact in all drafts.
+4. CHANNEL MATCHING:
+   - Written channels (Email, WhatsApp, SMS, Letter, Chat): Produce clean, copy-pasteable messages with a warm, human greeting and sign-off.
+   - Spoken channels (Phone Call, Face-to-Face): Provide a natural spoken script layout with:
+     * Spoken Opening Line (natural conversation starter)
+     * Core Talking Points (simple bulleted phrases to say out loud)
+     * How to Handle Pushback (what to say out loud if pressed)
+     * Delivery & Vocal Tone Tip (friendly, grounded advice on tone and pace)
+5. BRIEF OVERVIEW: Section 1 ("OPTIONS OVERVIEW") must give a simple 1-sentence explanation for each choice so it is easy to skim.
+6. RECOMMENDED NEXT STEPS: In Section 3 ("### 3. CONSIDERATION / HUMAN CHECK"), list up to 3 simple, practical, human next steps based on the user's request. If the query involves HR disputes, medical concerns, or legal trouble, advise them not to engage directly and to talk to an appropriate authority or professional.
+7. Always use natural British English (e.g. organise, prioritise, neighbourhood, behaviour).
+8. NEVER use the word "stress" or its variations.`;
 
         const draftRes = await ai.models.generateContent({
           model: 'gemini-3.6-flash',
           contents: promptContext,
           config: {
-            systemInstruction: `You are UnburdenMe, an interactive communication co-pilot and workload management assistant inside a smart productivity app.
-Your purpose is to help users manage incoming communication volume, set professional and personal boundaries, and maintain a manageable cognitive load.
+            systemInstruction: `You are UnburdenMe, a helpful and warm communication co-pilot in a smart productivity app. You help people communicate clearly, protect their boundaries, and respond thoughtfully without mental exhaustion.
 
-CORE RULES:
-1. ACCURATE & TASK-SPECIFIC SOLUTIONS:
-   - Carefully process the exact description provided in the user request box and any custom user instruction provided.
-   - At least 2 out of the 3 choices MUST incorporate the specific task or requested outcome, providing actual concrete solutions that directly address the specific content of the message.
-   - The 3rd choice (Option C) can be a generic deferral option stating that the user will complete this request at the next available opportunity.
-   - All choices must align with and incorporate the user's custom instruction if specified.
-2. SENSITIVE INFO PRESERVATION: Any bracketed placeholders like [Name], [Date], [Amount], [Client], [Order ID], [REDACTED] present in the user request MUST remain as anonymized placeholders in all 3 generated drafts.
-3. SCANNABLE FORMATTING: Keep prose minimal. Use bullet points, clear bold headings, and markdown text blocks with actual paragraph breaks (blank lines), NOT escaped characters like '\\n', so drafts are easy to read and copy.
-4. USER AUTONOMY & NEUTRAL FRAMING: Provide 3 distinct actionable choices (Option A, Option B, Option C) neutrally framed.
-5. LANGUAGE & CHANNEL STYLE:
-   - Always use plain, simple British English with everyday terms and concepts (e.g., organise, prioritise, behaviour, calendar, favourite).
-   - Write natural, human-like language that sounds like a real person — avoid stiff corporate jargon, complex buzzwords, or robotic AI phrasing unless specifically requested by the user.
-   - CHANNEL-SPECIFIC FORMATTING:
-     * WRITTEN CHANNELS (Email, WhatsApp, Teams, SMS, Letter): Write clear, copy-pasteable written message drafts with appropriate greeting and structure.
-     * SPOKEN VERBAL CHANNELS (Phone Call, Face-to-Face):
-       - DO NOT write email-style messages.
-       - Format each draft as a "Spoken Verbal Script & Talking Points" tailored for spoken telephone calls or in-person conversations.
-       - Include:
-         1. Opening Spoken Line (natural call starter/icebreaker)
-         2. Core Verbal Talking Points (bulleted concise phrases to say out loud)
-         3. Handling Verbal Pushback (what to say out loud if pushed back)
-         4. Spoken Delivery & Vocal Tone Advice (vocal tone, pacing, and composure)
-   - NEVER use the word 'stress' or its derivatives.
-   - Works for BOTH professional and personal contexts.
-6. SECTION 3 RECOMMENDED NEXT STEPS & SAFETY:
-   - In Section 3 ("### 3. CONSIDERATION / HUMAN CHECK"), right under the subheading, include up to 3 numbered brief next steps / recommendations (1., 2., 3. or 1., 2. if only 1 or 2 apply) tailored specifically to the user's input request and instructions.
-   - Must be safe, non-discriminatory, and constructive.
-   - If the user input involves sensitive matters (medical/clinical distress, mental health, legal dispute, harassment, discrimination, HR grievance, or safety concerns), suggest NOT engaging directly and seeking advice from a qualified professional, doctor, HR representative, or appropriate authority.
+CORE GUIDELINES:
+- Always use plain, friendly, conversational British English.
+- Speak like a real human peer. Avoid stiff corporate speak, artificial AI phrasing, or business buzzwords.
+- Make all recommendations and drafts clear, specific, and tailor-made to the user's exact request and desired outcome.
+- Ensure drafts adopt the requested tone (${desired_tone}) naturally and appropriately.
+- Maintain bracketed placeholders (e.g. [Name], [Date]) exactly as provided.
+- Keep output nicely formatted with clear Markdown headings and clean paragraph breaks.
+- NEVER use the word 'stress'.
 
-RESPONSE STRUCTURE REQUIRED:
+REQUIRED OUTPUT FORMAT:
 ### 1. OPTIONS OVERVIEW
-* **Option A: [Descriptive Title]** - [Very brief, short overview phrase]
-* **Option B: [Descriptive Title]** - [Very brief, short overview phrase]
-* **Option C: [Descriptive Title]** - [Very brief, short overview phrase]
+* **Option A: [Simple Title]** - [Brief 1-sentence description]
+* **Option B: [Simple Title]** - [Brief 1-sentence description]
+* **Option C: [Simple Title]** - [Brief 1-sentence description]
+
+---
 
 ### 2. EDITABLE DRAFTS
 
-#### Draft for Option A: [Descriptive Title]
+#### Draft for Option A: [Simple Title]
 \`\`\`text
-[Full draft text for Option A]
+[Full draft text or spoken script for Option A]
 \`\`\`
 
-#### Draft for Option B: [Descriptive Title]
+#### Draft for Option B: [Simple Title]
 \`\`\`text
-[Full draft text for Option B]
+[Full draft text or spoken script for Option B]
 \`\`\`
 
-#### Draft for Option C: [Descriptive Title]
+#### Draft for Option C: [Simple Title]
 \`\`\`text
-[Full draft text for Option C]
+[Full draft text or spoken script for Option C]
 \`\`\`
+
+---
 
 ### 3. CONSIDERATION / HUMAN CHECK
 #### Recommended Next Steps:
-1. [First specific recommendation/next step based on user input and instruction]
-2. [Second specific recommendation/next step based on user input and instruction]
-3. [Third specific recommendation/next step based on user input and instruction (omit if only 1 or 2 apply)]
+1. [Practical, simple next step tailored to request]
+2. [Practical, simple next step tailored to request]
+3. [Practical, simple next step tailored to request (omit if not needed)]
 
-* **Focus Reminder** Whichever option you choose, remember to ensure it is the exact response you would like and give yourself time to relax`,
+* **Focus Reminder** Whichever option you choose, make sure it feels right to you and give yourself space to recharge.`,
             temperature: 0.45,
             topP: 0.95,
           }
@@ -538,7 +534,6 @@ RESPONSE STRUCTURE REQUIRED:
     });
   } catch (error: any) {
     console.error('Error in /api/triage/full:', error);
-    // Return a 200 fallback response so the client never crashes
     return res.json({
       classification: {
         category: 'STANDARD_WORKLOAD',
@@ -546,7 +541,7 @@ RESPONSE STRUCTURE REQUIRED:
         reason: 'Fallback pipeline triggered'
       },
       grounding: {
-        grounding_sentence: 'You cannot expand the working hours today, but you can choose the top priority deliverable to focus on.',
+        grounding_sentence: 'You cannot add more hours to the day, but you can choose what to focus on first.',
         word_count: 17
       },
       raw_llm_response: generateFallbackResponse(req.body?.user_input || '', req.body?.instruction || 'Respond to this message', req.body?.channel || 'Email', req.body?.context_type || 'work', req.body?.desired_tone || 'Assertive'),
@@ -575,17 +570,18 @@ app.post('/api/summary/generate', async (req: Request, res: Response) => {
         const ai = getGeminiAI();
         const response = await ai.models.generateContent({
           model: 'gemini-2.5-flash',
-          contents: `Summarise the following ${typeLabel} content to reduce cognitive load.
-Primary User Preferred Outcome Format: ${outcomeLabel}.
-Provide a clear, accurate, and to-the-point output using British English.
+          contents: `Summarise the following ${typeLabel} content so it is easy and clear to read.
+Preferred Output Style: ${outcomeLabel}.
 
 Requirements:
-1. Title: A concise, descriptive 4-7 word title for this summary.
-2. Summary Paragraph: A well-crafted 2-4 sentence cohesive summary paragraph distilling the main narrative context.
-3. Bullet Points: Exactly 3 to 5 key bullet points covering the core information.
-4. Action Items: Clear, actionable tasks for the user or team.
-5. Decisions: Key decisions made or agreed upon in the content.
-6. Deadlines: Explicit dates, times, or timeframes mentioned.
+1. Title: A clear, simple 4-7 word title summarizing the context.
+2. Summary Paragraph: A friendly, easy-to-read 2-4 sentence summary of what this is about.
+3. Bullet Points: 3 to 5 clear bullet points pulling out the core details.
+4. Action Items: Simple, actionable things that need doing.
+5. Decisions: Key decisions made or agreed upon.
+6. Deadlines: Clear dates or timeframes mentioned.
+
+Use plain, simple British English. Avoid corporate jargon, robotic AI phrasing, and stiff terms.
 
 Content to summarise:
 """
@@ -658,537 +654,81 @@ ${textToSummarize}
     // Intelligent Fallback Summary
     const lines = textToSummarize.split(/\n+/).map((l: string) => l.trim()).filter((l: string) => l.length > 10);
     const firstLine = lines[0] || textToSummarize;
-    const fallbackTitle = `${typeLabel} Digest: ${firstLine.slice(0, 35)}...`;
+    const fallbackTitle = `${typeLabel} Overview: ${firstLine.slice(0, 35)}...`;
 
     const generatedBullets = lines.slice(0, 4).map((l: string) => l.replace(/^[-*•\d.\s]+/, ''));
     if (generatedBullets.length === 0) {
       generatedBullets.push('Key details extracted from provided text.');
     }
 
-    const actionLines = lines.filter((l: string) => /need|action|please|should|task|require|deliver|send|review/i.test(l)).slice(0, 3);
-    const decisionLines = lines.filter((l: string) => /agreed|decided|approved|confirm|resolved|chosen/i.test(l)).slice(0, 2);
-    const deadlineLines = lines.filter((l: string) => /by|deadline|due|today|tomorrow|friday|monday|pm|am|eod|q[1-4]/i.test(l)).slice(0, 2);
+    const actionLines = lines.filter((l: string) => /need|must|please|action|todo|check|send/i.test(l));
+    const decisionLines = lines.filter((l: string) => /agreed|decided|confirmed|approved|settled/i.test(l));
+    const deadlineLines = lines.filter((l: string) => /by|deadline|due|today|tomorrow|monday|tuesday|wednesday|thursday|friday|saturday|sunday|\d{1,2}:\d{2}/i.test(l));
 
     return res.json({
       id: 'sum-' + Date.now(),
       title: fallbackTitle,
       contentType: typeLabel,
       summaryOutcome: outcomeLabel,
-      summaryParagraph: textToSummarize.slice(0, 220) + '...',
-      bulletPoints: generatedBullets.length >= 3 ? generatedBullets.slice(0, 5) : [
-        ...generatedBullets,
-        'Core information digested into actionable format.',
-        'Review key commitments and confirm next steps.'
-      ],
-      actionItems: actionLines.length > 0 ? actionLines : ['Review content details and confirm next steps.'],
-      decisions: decisionLines.length > 0 ? decisionLines : ['Primary approach confirmed as per text.'],
-      deadlines: deadlineLines.length > 0 ? deadlineLines : ['Standard timeline applies.'],
+      summaryParagraph: lines.slice(0, 2).join(' ') || 'Here is a quick overview of the key details from your text.',
+      bulletPoints: generatedBullets,
+      actionItems: actionLines.length > 0 ? actionLines.slice(0, 3) : ['Review text details and confirm next steps.'],
+      decisions: decisionLines.length > 0 ? decisionLines.slice(0, 3) : ['No explicit decisions flagged in text.'],
+      deadlines: deadlineLines.length > 0 ? deadlineLines.slice(0, 3) : ['No explicit dates or deadlines detected.'],
       originalSnippet: snippet,
       originalWordCount: wordCount,
-      summaryWordCount: 85,
+      summaryWordCount: Math.round(wordCount * 0.4),
       createdAt: new Date().toISOString()
     });
-  } catch (err: any) {
-    console.error('Error in /api/summary/generate:', err);
-    return res.status(500).json({ error: 'Failed to generate summary' });
+  } catch (error: any) {
+    console.error('Error in /api/summary/generate:', error);
+    res.status(500).json({ error: 'Failed to generate summary.' });
   }
 });
 
-// 6. Problem Solver API Endpoint
-app.post('/api/problem-solver/solve', async (req: Request, res: Response) => {
-  try {
-    const { challenge } = req.body || {};
-    const promptText = (challenge || '').trim();
-
-    if (!promptText) {
-      return res.status(400).json({ error: 'Challenge description is required.' });
-    }
-
-    const SENSITIVE_DISCLAIMER_MESSAGE = "This issue involves a sensitive medical, legal, or safety matter. For your safety and well-being, UnburdenMe cannot provide advice on this topic. Please consult a trusted professional, doctor, or appropriate authority.";
-
-    // Pre-screening regex for severe sensitive domains (Medical/Clinical/Psychiatric/Legal liability/Financial investment/Physical harm/Violent/Security exploits)
-    const sensitiveRegex = /\b(medical|doctor|patient|clinical|psychiat|depress|suicid|self-harm|medication|pill|dosage|illness|symptom|hospital|surgery|lawsuit|suing|sue|court|attorney|lawyer|liability|prosecut|subpoena|criminal|arrest|illegal|stocks|shares|crypto|crypto-currency|investment advice|day trading|portfolio allocation|guaranteed return|physical harm|violence|weapon|hack|exploit|malware)\b/i;
-
-    if (sensitiveRegex.test(promptText)) {
-      return res.json({
-        isSensitive: true,
-        sensitiveDisclaimer: SENSITIVE_DISCLAIMER_MESSAGE,
-        timestamp: new Date().toISOString()
-      });
-    }
-
-    if (process.env.GEMINI_API_KEY) {
-      try {
-        const ai = getGeminiAI();
-        const response = await ai.models.generateContent({
-          model: 'gemini-3.6-flash',
-          contents: `Analyze the user's challenge and provide 3 distinct practical solutions:
-
-User Challenge:
-"""
-${promptText}
-"""`,
-          config: {
-            temperature: 0.3,
-            topP: 0.95,
-            systemInstruction: `You are UnburdenMe Problem Solver, an expert decision-support assistant.
-
-STRICT SAFETY & COMPLIANCE DIRECTIVES:
-1. You must NEVER provide medical, clinical, psychiatric, legal liability, or financial investment advice.
-2. You must NEVER provide advice that facilitates illegal activity, physical harm, safety breaches, or security exploits.
-3. If the user prompt touches on severe sensitive topics (medical distress, legal trouble, violence, or self-harm), set "isSensitive" to true and return NOTHING else in solutions or recommendedFirstStep.
-   Exact sensitive disclaimer text to return if isSensitive is true:
-   "This issue involves a sensitive medical, legal, or safety matter. For your safety and well-being, UnburdenMe cannot provide advice on this topic. Please consult a trusted professional, doctor, or appropriate authority."
-
-OUTPUT FORMAT (JSON ONLY):
-If isSensitive is true:
-{
-  "isSensitive": true,
-  "sensitiveDisclaimer": "This issue involves a sensitive medical, legal, or safety matter. For your safety and well-being, UnburdenMe cannot provide advice on this topic. Please consult a trusted professional, doctor, or appropriate authority."
-}
-
-If isSensitive is false:
-{
-  "isSensitive": false,
-  "solutions": [
-    {
-      "optionKey": "Option A",
-      "title": "Short Descriptive Title (e.g., Direct & Structured Approach)",
-      "overview": "Clear 1-2 sentence solution overview.",
-      "pros": ["Key pro 1", "Key pro 2"],
-      "cons": ["Key con 1", "Key con 2"],
-      "actionSteps": [
-        "Concrete action step 1",
-        "Concrete action step 2",
-        "Concrete action step 3"
-      ]
-    },
-    {
-      "optionKey": "Option B",
-      "title": "Short Descriptive Title (e.g., Diplomatic & Phased Approach)",
-      "overview": "Clear 1-2 sentence solution overview.",
-      "pros": ["Key pro 1", "Key pro 2"],
-      "cons": ["Key con 1", "Key con 2"],
-      "actionSteps": [
-        "Concrete action step 1",
-        "Concrete action step 2",
-        "Concrete action step 3"
-      ]
-    },
-    {
-      "optionKey": "Option C",
-      "title": "Short Descriptive Title (e.g., Alternative / Low-Risk Approach)",
-      "overview": "Clear 1-2 sentence solution overview.",
-      "pros": ["Key pro 1", "Key pro 2"],
-      "cons": ["Key con 1", "Key con 2"],
-      "actionSteps": [
-        "Concrete action step 1",
-        "Concrete action step 2",
-        "Concrete action step 3"
-      ]
-    }
-  ],
-  "recommendedFirstStep": "Single clear recommendation on the exact first step to take right now to get started immediately."
-}
-
-Use British English spelling (e.g., organisation, prioritisation, behaviour, analyse).`,
-            responseMimeType: 'application/json',
-            responseSchema: {
-              type: Type.OBJECT,
-              properties: {
-                isSensitive: { type: Type.BOOLEAN },
-                sensitiveDisclaimer: { type: Type.STRING },
-                solutions: {
-                  type: Type.ARRAY,
-                  items: {
-                    type: Type.OBJECT,
-                    properties: {
-                      optionKey: { type: Type.STRING },
-                      title: { type: Type.STRING },
-                      overview: { type: Type.STRING },
-                      pros: { type: Type.ARRAY, items: { type: Type.STRING } },
-                      cons: { type: Type.ARRAY, items: { type: Type.STRING } },
-                      actionSteps: { type: Type.ARRAY, items: { type: Type.STRING } }
-                    },
-                    required: ['optionKey', 'title', 'overview', 'pros', 'cons', 'actionSteps']
-                  }
-                },
-                recommendedFirstStep: { type: Type.STRING }
-              },
-              required: ['isSensitive']
-            }
-          }
-        });
-
-        const resultText = response.text || '{}';
-        const parsed = JSON.parse(resultText);
-
-        if (parsed.isSensitive) {
-          return res.json({
-            isSensitive: true,
-            sensitiveDisclaimer: SENSITIVE_DISCLAIMER_MESSAGE,
-            timestamp: new Date().toISOString()
-          });
-        }
-
-        if (parsed.solutions && parsed.solutions.length === 3) {
-          return res.json({
-            isSensitive: false,
-            solutions: parsed.solutions,
-            recommendedFirstStep: parsed.recommendedFirstStep || 'Begin with Action Step 1 of Option A to establish clear baseline alignment immediately.',
-            timestamp: new Date().toISOString()
-          });
-        }
-      } catch (geminiError) {
-        console.warn('Gemini problem solver failed or rate-limited. Using intelligent fallback:', geminiError);
-      }
-    }
-
-    // Intelligent Fallback Solutions for Safe Query
-    return res.json({
-      isSensitive: false,
-      solutions: [
-        {
-          optionKey: 'Option A',
-          title: 'Direct & Structured Approach',
-          overview: 'Directly address the primary bottleneck by proposing a focused 15-minute sync and establishing written agreements.',
-          pros: ['Immediate clarity and alignment', 'Eliminates guesswork or delayed expectations'],
-          cons: ['Requires upfront initiative', 'Demands immediate focus time'],
-          actionSteps: [
-            'Outline the top 2 priority items in a 3-bullet email or message.',
-            'Propose a quick 15-minute alignment call with primary stakeholders.',
-            'Send a written recap confirming agreed deadlines immediately after the call.'
-          ]
-        },
-        {
-          optionKey: 'Option B',
-          title: 'Diplomatic & Phased Approach',
-          overview: 'Deconstruct the challenge into manageable milestones to build steady momentum while maintaining stakeholder goodwill.',
-          pros: ['Lower friction with stakeholders', 'Provides flexibility for adjustments'],
-          cons: ['Resolution is spread over a longer timeframe', 'Requires ongoing milestone tracking'],
-          actionSteps: [
-            'Identify the single most critical deliverable to complete first.',
-            'Communicate a phased timeline giving realistic dates for remaining items.',
-            'Gather early feedback on Phase 1 before initiating Phase 2.'
-          ]
-        },
-        {
-          optionKey: 'Option C',
-          title: 'Alternative / Low-Risk Delegated Approach',
-          overview: 'Re-prioritise non-critical elements or leverage existing templates and delegated support to reduce immediate friction.',
-          pros: ['Protects personal bandwidth', 'Leverages existing resources'],
-          cons: ['May require initial oversight', 'Dependent on resource availability'],
-          actionSteps: [
-            'Audit existing documentation or past templates to avoid starting from scratch.',
-            'Delegate or defer non-urgent secondary tasks to later in the week.',
-            'Establish a low-effort asynchronous check-in system.'
-          ]
-        }
-      ],
-      recommendedFirstStep: 'Start with Step 1 of Option A by drafting a short 3-bullet summary of your primary bottleneck. If time is limited today, use Step 1 of Option B to focus exclusively on the single highest-value sub-task.',
-      timestamp: new Date().toISOString()
-    });
-
-  } catch (err: any) {
-    console.error('Error in /api/problem-solver/solve:', err);
-    return res.status(500).json({ error: 'Failed to process problem solver request.' });
-  }
-});
-
-// Endpoint 6: Preparation Tool - Personalized Event/Task Checklist Generator
-app.post('/api/prep-tool/generate', async (req: Request, res: Response) => {
-  try {
-    const { activity, activity_type = 'Event', context_notes = '' } = req.body;
-
-    if (!activity || typeof activity !== 'string' || !activity.trim()) {
-      return res.status(400).json({ error: 'Activity headline is required.' });
-    }
-
-    const activityInput = activity.trim();
-    const typeInput = typeof activity_type === 'string' ? activity_type.trim() : 'Event';
-    const notesInput = typeof context_notes === 'string' ? context_notes.trim() : '';
-
-    const combinedQuery = `${activityInput} ${typeInput} ${notesInput}`.toLowerCase();
-
-    // Strict Safety Guardrails Screening
-    const sensitiveKeywords = [
-      'harass', 'discrimina', 'terminate', 'fire', 'grievance', 'lawsuit', 'sue', 'court',
-      'lawyer', 'attorney', 'hospital', 'doctor', 'panic', 'breakdown', 'suicid', 'self-harm',
-      'illegal', 'violence', 'exploit', 'hack', 'substance', 'abuse', 'overdose'
-    ];
-
-    const isSensitiveQuery = sensitiveKeywords.some(keyword => combinedQuery.includes(keyword));
-
-    if (isSensitiveQuery) {
-      return res.json({
-        isSensitive: true,
-        sensitiveDisclaimer: SENSITIVE_DISCLAIMER_MESSAGE,
-        timestamp: new Date().toISOString()
-      });
-    }
-
-    const ai = getGeminiAI();
-
-    if (process.env.GEMINI_API_KEY) {
-      try {
-        const response = await ai.models.generateContent({
-          model: 'gemini-2.5-flash',
-          contents: `You are an empathetic, practical, non-judgmental preparation coach for an executive and personal workload companion.
-The user needs a personalized, highly practical preparation checklist before an upcoming visit, event, meeting, interview, or task.
-
-Activity Headline: "${activityInput}"
-Activity Category: "${typeInput}"
-User Context / Notes: "${notesInput || 'None provided'}"
-
-Generate a personalized preparation guide strictly tailored to this specific activity and context.
-
-Rules:
-1. Provide a clear, supportive headline.
-2. Provide a 1-2 sentence grounding mindset note to give the user focus and confidence.
-3. Organize actionable checklist items into 4 distinct categories:
-   - "Essential Items & Materials to Have Ready" (3-4 items)
-   - "Key Preparation Steps Beforehand" (3-4 items)
-   - "Communication & Mindset During the Activity" (2-3 items)
-   - "Post-Event Follow-up Actions" (1-2 items)
-4. Ensure tone uses plain, simple British English with everyday terms and concepts. Avoid corporate jargon, robotic phrasing, or stiff buzzwords so suggestions feel natural, human-like, and easy for any average person to understand.
-5. Use British English spelling (e.g. organisation, prioritisation, behaviour, analyse).`,
-          config: {
-            systemInstruction: `You return structured JSON for personalized event and activity preparation checklists. Ensure tone is supportive and safe.
-Example JSON structure:
-{
-  "isSensitive": false,
-  "headline": "Personalised Preparation Checklist for Job Interview",
-  "mindsetNote": "Approach this session with calm composure. Focus on demonstrating your core strengths and listening actively.",
-  "categories": [
-    {
-      "category": "Essential Items & Materials to Have Ready",
-      "items": ["2 printed copies of updated CV", "Notebook and pen for key takeaways", "Photo ID and visitor pass confirmation"]
-    },
-    {
-      "category": "Key Preparation Steps Beforehand",
-      "items": ["Review 3 key achievements from your recent project", "Draft 2 strategic questions for the interviewer", "Test your route/travel time to arrive 10 minutes early"]
-    },
-    {
-      "category": "Communication & Mindset During the Activity",
-      "items": ["Pause briefly before answering complex questions", "Maintain open body posture and steady vocal pacing"]
-    },
-    {
-      "category": "Post-Event Follow-up Actions",
-      "items": ["Send a concise thank-you email within 24 hours outlining key mutual discussion points"]
-    }
-  ]
-}`,
-            responseMimeType: 'application/json',
-            responseSchema: {
-              type: Type.OBJECT,
-              properties: {
-                isSensitive: { type: Type.BOOLEAN },
-                headline: { type: Type.STRING },
-                mindsetNote: { type: Type.STRING },
-                categories: {
-                  type: Type.ARRAY,
-                  items: {
-                    type: Type.OBJECT,
-                    properties: {
-                      category: { type: Type.STRING },
-                      items: { type: Type.ARRAY, items: { type: Type.STRING } }
-                    },
-                    required: ['category', 'items']
-                  }
-                }
-              },
-              required: ['isSensitive', 'headline', 'mindsetNote', 'categories']
-            }
-          }
-        });
-
-        const resultText = response.text || '{}';
-        const parsed = JSON.parse(resultText);
-
-        if (parsed.categories && parsed.categories.length > 0) {
-          return res.json({
-            isSensitive: false,
-            headline: parsed.headline || `Preparation Checklist: ${activityInput}`,
-            mindsetNote: parsed.mindsetNote || 'Approach this activity with clear focus and steady pacing.',
-            categories: parsed.categories,
-            timestamp: new Date().toISOString()
-          });
-        }
-      } catch (geminiError) {
-        console.warn('Gemini prep tool failed or rate-limited. Using intelligent fallback:', geminiError);
-      }
-    }
-
-    // Intelligent Fallback Prep Checklist Generator for Safe Query
-    const isInterview = combinedQuery.includes('interview') || combinedQuery.includes('job') || combinedQuery.includes('career');
-    const isMeeting = combinedQuery.includes('meeting') || combinedQuery.includes('review') || combinedQuery.includes('sync') || combinedQuery.includes('client');
-    const isVisit = combinedQuery.includes('visit') || combinedQuery.includes('doctor') || combinedQuery.includes('appointment') || combinedQuery.includes('family');
-
-    let fallbackCategories = [];
-
-    if (isInterview) {
-      fallbackCategories = [
-        {
-          category: "Essential Items & Materials to Have Ready",
-          items: [
-            `2 physical or digital copies of your resume/portfolio for "${activityInput}"`,
-            "A dedicated notepad and pen to capture key discussion points",
-            "Confirmed contact details for the host or interviewer"
-          ]
-        },
-        {
-          category: "Key Preparation Steps Beforehand",
-          items: [
-            "Prepare 3 concise examples illustrating your core strengths and problem-solving experience",
-            "Formulate 2-3 thoughtful questions regarding team priorities or role expectations",
-            "Verify logistics, route, or video link settings 15 minutes in advance"
-          ]
-        },
-        {
-          category: "Communication & Mindset During the Activity",
-          items: [
-            "Maintain steady vocal pacing and pause briefly before answering complex prompts",
-            "Emphasise collaborative outcomes and key lessons learned"
-          ]
-        },
-        {
-          category: "Post-Event Follow-up Actions",
-          items: [
-            "Send a short thank-you note within 24 hours confirming your interest and key meeting takeaways"
-          ]
-        }
-      ];
-    } else if (isMeeting) {
-      fallbackCategories = [
-        {
-          category: "Essential Items & Materials to Have Ready",
-          items: [
-            `Key discussion agenda or slide deck regarding "${activityInput}"`,
-            "List of key stakeholders and their primary decision-making priorities",
-            "Action item tracker to log deliverables in real time"
-          ]
-        },
-        {
-          category: "Key Preparation Steps Beforehand",
-          items: [
-            "Review previous meeting notes to verify open action items",
-            "Define the exact target outcome or decision needed by the end of the session",
-            "Circulate supporting materials 1 hour prior to ensure all attendees are aligned"
-          ]
-        },
-        {
-          category: "Communication & Mindset During the Activity",
-          items: [
-            "Start by clearly stating the objective and time box for each agenda topic",
-            "Guide side-discussions back to core priorities gracefully"
-          ]
-        },
-        {
-          category: "Post-Event Follow-up Actions",
-          items: [
-            "Distribute a 3-bullet summary of agreed decisions and assignees immediately after"
-          ]
-        }
-      ];
-    } else if (isVisit) {
-      fallbackCategories = [
-        {
-          category: "Essential Items & Materials to Have Ready",
-          items: [
-            `Relevant documentation or personal items for "${activityInput}"`,
-            "Valid photo ID, pass, or confirmation details",
-            "Comfortable attire and water bottle for travel"
-          ]
-        },
-        {
-          category: "Key Preparation Steps Beforehand",
-          items: [
-            "Confirm timing and location address with all parties involved",
-            "Note down any specific questions or points you wish to discuss",
-            "Allow a 15-minute travel buffer to avoid rushing"
-          ]
-        },
-        {
-          category: "Communication & Mindset During the Activity",
-          items: [
-            "Stay present and give yourself permission to move at an unhurried pace",
-            "Express any preferences or boundaries clearly and calmly"
-          ]
-        },
-        {
-          category: "Post-Event Follow-up Actions",
-          items: [
-            "Log any follow-up appointments, dates, or notes in your schedule calendar"
-          ]
-        }
-      ];
-    } else {
-      fallbackCategories = [
-        {
-          category: "Essential Items & Materials to Have Ready",
-          items: [
-            `All essential reference files, notes, or equipment needed for "${activityInput}"`,
-            "A clean notepad or digital document to track key milestones",
-            "Necessary login credentials or access passes"
-          ]
-        },
-        {
-          category: "Key Preparation Steps Beforehand",
-          items: [
-            "Break down the activity into 2-3 manageable preparation phases",
-            "Set aside 15 minutes of uninterrupted quiet time prior to starting",
-            "Define your single definition of success for this task"
-          ]
-        },
-        {
-          category: "Communication & Mindset During the Activity",
-          items: [
-            "Focus on one step at a time without multi-tasking",
-            "Keep an assertive, steady posture and clear communication"
-          ]
-        },
-        {
-          category: "Post-Event Follow-up Actions",
-          items: [
-            "Review what went well and tick off completed tasks on your priority list"
-          ]
-        }
-      ];
-    }
-
-    return res.json({
-      isSensitive: false,
-      headline: `Personalised Preparation Guide: ${activityInput}`,
-      mindsetNote: `Focus on clear, steady execution for "${activityInput}". Take things one step at a time with calm composure.`,
-      categories: fallbackCategories,
-      timestamp: new Date().toISOString()
-    });
-
-  } catch (err: any) {
-    console.error('Error in /api/prep-tool/generate:', err);
-    return res.status(500).json({ error: 'Failed to generate preparation checklist.' });
-  }
-});
-
-
-// Vite Integration
+// Setup Vite or static serving
 async function startServer() {
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
       server: { middlewareMode: true },
-      appType: 'spa',
+      appType: 'custom',
     });
     app.use(vite.middlewares);
+    app.use('*', async (req, res, next) => {
+      if (req.originalUrl.startsWith('/api')) {
+        return next();
+      }
+      try {
+        const template = await vite.transformIndexHtml(
+          req.originalUrl,
+          `<!DOCTYPE html>
+          <html lang="en">
+            <head>
+              <meta charset="UTF-8" />
+              <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+              <title>UnburdenMe</title>
+            </head>
+            <body>
+              <div id="root"></div>
+              <script type="module" src="/src/main.tsx"></script>
+            </body>
+          </html>`
+        );
+        res.status(200).set({ 'Content-Type': 'text/html' }).end(template);
+      } catch (e) {
+        vite.ssrFixStacktrace(e as Error);
+        next(e);
+      }
+    });
   } else {
-    const distPath = path.join(process.cwd(), 'dist');
-    app.use(express.static(distPath));
+    app.use(express.static(path.join(__dirname, '../dist')));
     app.get('*', (req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
+      res.sendFile(path.join(__dirname, '../dist/index.html'));
     });
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Triage Engine server running on http://0.0.0.0:${PORT}`);
+  app.listen(PORT, () => {
+    console.log(`Server is running on http://localhost:${PORT}`);
   });
 }
 
