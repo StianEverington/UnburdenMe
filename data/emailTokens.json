@@ -1,0 +1,3 @@
+{
+  "": "This file intentionally left blank as a placeholder for persisted email tokens. Do not commit tokens with real secrets in plain text. The oauth flow will encrypt refresh tokens using ENCRYPTION_KEY before writing."
+}
