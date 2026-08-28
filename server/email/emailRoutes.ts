@@ -5,6 +5,7 @@ import { listEmails, saveEmail, markActionRequired as dbMarkAction } from '../db
 import { getTokenByUserId } from '../db/index.js';
 import fetch from 'node-fetch';
 import { v4 as uuidv4 } from 'uuid';
+import { postProcessText } from '../ai/postProcess.js';
 
 const router = express.Router();
 
@@ -16,23 +17,21 @@ function getGeminiAI() {
   return new GoogleGenAI({ apiKey: apiKey || 'DUMMY_KEY', httpOptions: { headers: { 'User-Agent': 'aistudio-build' } } });
 }
 
-function buildSystemInstructionReplyMode() {
-  return `You are UnburdenMe's Companion. The user is replying to a specific incoming email. Produce exactly three short, realistic, personal, and non-corporate email reply drafts. Each draft should:
-- Start with a brief greeting addressing the sender naturally ("Hi Sam,").
-- Directly reference the key point from the original email in one sentence.
-- Give a clear concise next step or answer.
-- Keep language simple, friendly and human (avoid AI phrases like "as an AI" or "I can generate").
-- Use British English spelling and casual-professional tone. 
-Return the three drafts clearly labelled as Option A, Option B, Option C and include a 1-3 line recommended next action at the end.`;
+function fewShotExamples(mode: 'reply' | 'compose') {
+  if (mode === 'reply') {
+    return `Example 1 (reply):\nOption A:\nHi Sam,\nThanks — I can take that on. I\'ll get it done by Friday and let you know if anything changes.\n\nOption B:\nHi Sam,\nQuick one: can you confirm the final price? Once I have that I\'ll confirm.\n\nOption C:\nHi Sam,\nI\'m happy to help — is there anything you want prioritised?`;
+  }
+  return `Example 1 (compose):\nOption A:\nHi Alice,\nJust checking if we can move the meeting to Tuesday — I\'m travelling this week. I\'m free 10am or 2pm.\n\nOption B:\nHi Alice,\nCould we please shift our meeting to next Tue? I have time at 10am or 2pm.\n\nOption C:\nHi Alice,\nI\'m away this week — could we look at Tuesday instead?`; 
 }
 
-function buildSystemInstructionComposeMode() {
-  return `You are UnburdenMe's Companion. The user asked to write an original email (there is no existing message to reply to). Produce exactly three short, realistic, personal, and non-corporate email drafts based solely on the user's companion content. Each draft should:
-- Start with a brief greeting appropriate for the recipient (assume a relatively familiar but professional contact).
-- State the purpose clearly in the first short sentence.
-- Use simple and friendly language, avoid corporate jargon and AI-framing language.
-- Offer a clear closing and suggested sign-off.
-Return the three drafts clearly labelled as Option A, Option B, Option C and include a 1-3 line recommended next action at the end.`;
+function buildSystemInstruction(mode: 'reply' | 'compose', samplePhrase?: string, toneHint?: string) {
+  const base = mode === 'compose' ? 'You are UnburdenMe Companion. Write three short, friendly, personal email drafts based on the user\'s companion content.' : 'You are UnburdenMe Companion. Reply to the given email with three short, friendly, personal drafts that reference the key point.';
+  let sys = base + ' Avoid corporate words, keep language natural and conversational. Use British English.';
+  if (samplePhrase) sys += ` Match the user\'s phrasing and tone: "${samplePhrase}".`;
+  if (toneHint) sys += ` Tone hint: ${toneHint}.`;
+  // Add few-shot
+  sys += '\n\n' + fewShotExamples(mode);
+  return sys;
 }
 
 router.post('/suggest', async (req: Request, res: Response) => {
@@ -41,16 +40,26 @@ router.post('/suggest', async (req: Request, res: Response) => {
       instruction = 'Respond to this message',
       companion_content = '',
       email = undefined,
+      tone = undefined,
     } = req.body || {};
 
     if (!companion_content && !email) {
       return res.status(400).json({ error: 'Missing companion_content or email body to base suggestions on' });
     }
 
-    const mode = /write|compose|new message|draft/i.test(instruction) ? 'compose' : 'reply';
-    const systemInstruction = mode === 'compose' ? buildSystemInstructionComposeMode() : buildSystemInstructionReplyMode();
+    const mode: 'reply'|'compose' = /write|compose|new message|draft/i.test(instruction) ? 'compose' : 'reply';
+
+    // Tone mirroring: pick a short sample phrase from companion_content (first sentence)
+    let samplePhrase: string | undefined = undefined;
+    if (companion_content && companion_content.trim()) {
+      const m = companion_content.trim().split(/[\.\!\?\n]/).map(s=>s.trim()).filter(Boolean);
+      if (m.length > 0) samplePhrase = m[0].slice(0,140);
+    }
+
+    const systemInstruction = buildSystemInstruction(mode, samplePhrase, tone);
 
     const ai = getGeminiAI();
+
     const promptParts: string[] = [];
     promptParts.push(`Instruction: ${instruction}`);
     promptParts.push(`Companion: ${companion_content}`);
@@ -64,11 +73,11 @@ router.post('/suggest', async (req: Request, res: Response) => {
 
     if (!process.env.GEMINI_API_KEY) {
       const drafts = [
-        `Option A:\nHi ${email?.from?.split(' ')[0] || 'there'},\n\n${companion_content || 'Thanks for the note — I can take this on and will get back to you.'}\n\nBest,`,
-        `Option B:\nHi ${email?.from?.split(' ')[0] || 'there'},\n\nQuick update: ${companion_content || 'I\'ll follow up with more details by Friday.'}\n\nThanks,`,
-        `Option C:\nHi ${email?.from?.split(' ')[0] || 'there'},\n\nShort reply: ${companion_content || 'I can do this. Please confirm the deadline.'}\n\nCheers,`,
-      ];
-      return res.json({ mode, drafts, recommendedAction: 'Pick and edit as needed.' });
+        `Option A:\nHi ${email?.from?.split(' ')[0] || 'there'},\n\n${companion_content || 'Thanks — I\'ll get on this and will confirm.'}\n\nBest,`,
+        `Option B:\nHi ${email?.from?.split(' ')[0] || 'there'},\n\nQuick note: ${companion_content || 'I\'ll follow up with details soon.'}\n\nThanks,`,
+        `Option C:\nHi ${email?.from?.split(' ')[0] || 'there'},\n\nShort reply: ${companion_content || 'Can you confirm the date for me?'}\n\nCheers,`,
+      ].map(d => postProcessText(d, tone));
+      return res.json({ mode, drafts, recommendedAction: 'Pick a draft and tweak if you like.' });
     }
 
     const response = await ai.models.generateContent({
@@ -93,7 +102,11 @@ router.post('/suggest', async (req: Request, res: Response) => {
       while (drafts.length < 3) drafts.push('');
     }
 
-    return res.json({ mode, drafts, recommendedAction: 'Choose a draft, edit lightly, then send.', raw: text });
+    // Post-process drafts to remove remaining corporate terms
+    drafts = drafts.map(d => postProcessText(d, tone));
+
+    const recommendedAction = 'Choose a draft, edit lightly if needed, then send.';
+    return res.json({ mode, drafts, recommendedAction, raw: text });
   } catch (err: any) {
     console.error('Error /api/email/suggest', err);
     res.status(500).json({ error: 'failed to generate suggestions' });
@@ -116,11 +129,8 @@ router.get('/emails', async (req: Request, res: Response) => {
 router.post('/sync-now', async (req: Request, res: Response) => {
   try {
     const userId = (req.body.userId as string) || 'default';
-    // Minimal immediate sync: refresh token, list messages, save
     const tokenRecord = getTokenByUserId(userId);
     if (!tokenRecord) return res.status(404).json({ error: 'no token for user' });
-
-    // Refresh access token
     const refreshTokenEncrypted = tokenRecord.encrypted_refresh_token;
     if (!refreshTokenEncrypted) return res.status(400).json({ error: 'no refresh token stored' });
 
