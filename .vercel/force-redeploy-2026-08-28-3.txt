@@ -1,0 +1,6 @@
+Force redeploy trigger
+
+This commit exists to force Vercel to pick up the latest branch head and avoid stale cached builds.
+It does not change runtime code. If Vercel still uses bun after this commit, please run "Clear cache and redeploy" in the Vercel dashboard (Deployments → More → Redeploy → Clear cache and redeploy) or set the Install Command to `npm ci` in Project Settings -> Git -> Build & Development Settings.
+
+Committed by GitHub Copilot to bump the branch and force a new build attempt.
