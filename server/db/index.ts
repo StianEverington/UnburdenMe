@@ -1,3 +1,4 @@
+// Calendar DB support added to existing DB module
 import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
@@ -13,7 +14,7 @@ ensureDataDir();
 
 const db = new Database(DB_PATH);
 
-// Simple migrations
+// Simple migrations (email tables + calendar table)
 db.exec(`
 CREATE TABLE IF NOT EXISTS email_tokens (
   id TEXT PRIMARY KEY,
@@ -48,6 +49,25 @@ CREATE TABLE IF NOT EXISTS synced_emails (
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_synced_msgs_provider_id ON synced_emails(provider, provider_message_id);
+
+CREATE TABLE IF NOT EXISTS calendar_events (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  provider TEXT NOT NULL,
+  provider_event_id TEXT NOT NULL,
+  calendar_id TEXT,
+  summary TEXT,
+  description TEXT,
+  start_ts INTEGER,
+  end_ts INTEGER,
+  location TEXT,
+  is_all_day INTEGER DEFAULT 0,
+  priority INTEGER DEFAULT 0,
+  metadata TEXT,
+  created_at INTEGER DEFAULT (strftime('%s','now'))
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_calendar_events_provider_id ON calendar_events(provider, provider_event_id);
 `);
 
 export function upsertToken(record: {
@@ -118,7 +138,46 @@ export function listEmails(userId: string, limit = 50) {
 }
 
 export function markActionRequired(provider: string, provider_message_id: string, flag: boolean) {
-  return db.prepare('UPDATE synced_emails SET is_action_required = ?, updated_at = strftime('%s','now') WHERE provider = ? AND provider_message_id = ?').run(flag ? 1 : 0, provider, provider_message_id);
+  return db.prepare("UPDATE synced_emails SET is_action_required = ?, updated_at = strftime('%s','now') WHERE provider = ? AND provider_message_id = ?").run(flag ? 1 : 0, provider, provider_message_id);
+}
+
+// Calendar event helpers
+export function saveCalendarEvent(evt: {
+  id: string;
+  user_id: string;
+  provider: string;
+  provider_event_id: string;
+  calendar_id?: string;
+  summary?: string;
+  description?: string;
+  start_ts?: number;
+  end_ts?: number;
+  location?: string;
+  is_all_day?: number;
+  priority?: number;
+  metadata?: string;
+}) {
+  const stmt = db.prepare(`
+    INSERT INTO calendar_events (id, user_id, provider, provider_event_id, calendar_id, summary, description, start_ts, end_ts, location, is_all_day, priority, metadata)
+    VALUES (@id,@user_id,@provider,@provider_event_id,@calendar_id,@summary,@description,@start_ts,@end_ts,@location,@is_all_day,@priority,@metadata)
+    ON CONFLICT(provider, provider_event_id) DO UPDATE SET
+      summary=excluded.summary,
+      description=excluded.description,
+      start_ts=excluded.start_ts,
+      end_ts=excluded.end_ts,
+      location=excluded.location,
+      priority=excluded.priority,
+      metadata=COALESCE(excluded.metadata, calendar_events.metadata)
+  `);
+  stmt.run(evt);
+}
+
+export function listCalendarEvents(userId: string, limit = 100) {
+  return db.prepare('SELECT * FROM calendar_events WHERE user_id = ? ORDER BY start_ts DESC LIMIT ?').all(userId, limit);
+}
+
+export function markEventPriority(provider: string, provider_event_id: string, priority: number) {
+  return db.prepare('UPDATE calendar_events SET priority = ?, updated_at = strftime("%s","now") WHERE provider = ? AND provider_event_id = ?').run(priority, provider, provider_event_id);
 }
 
 export default db;
