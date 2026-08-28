@@ -1,0 +1,3 @@
+Deploy trigger - force redeploy
+
+This commit removes node-fetch references and forces npm install via packageManager: npm@9. It also serves as a trigger for Vercel to pick the latest branch commit.

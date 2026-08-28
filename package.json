@@ -23,8 +23,7 @@
     "express": "^4.21.2",
     "dotenv": "^17.2.3",
     "motion": "^12.23.24",
-    "undici": "^6.0.0",
-    "better-sqlite3": "^8.3.0"
+    "undici": "^6.0.0"
   },
   "devDependencies": {
     "@types/express": "^4.17.21",
