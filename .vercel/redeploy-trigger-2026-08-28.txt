@@ -1,0 +1,11 @@
+Trigger redeploy
+
+This file was created to trigger a Vercel redeploy for branch feature/email-sync.
+
+Changes expected in this deployment:
+- frontend: EventForm, CalendarList, CalendarItem components (added)
+- server: calendar client updates, fetch replaced with undici
+- package.json: packageManager set to npm@9, node-fetch replaced with undici
+- other small fixes from the feature/email-sync branch
+
+Committed by GitHub Copilot on behalf of StianEverington to force Vercel to pick up the latest branch changes.
