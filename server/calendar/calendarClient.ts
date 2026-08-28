@@ -1,5 +1,5 @@
-// Calendar client REST helpers (list calendars, create/update/delete events)
-import fetch from 'node-fetch';
+// Minimal Google Calendar client helpers (REST)
+import { fetch } from 'undici';
 
 export async function listCalendarsApi(accessToken: string) {
   const url = `https://www.googleapis.com/calendar/v3/users/me/calendarList`;
