@@ -1,4 +1,4 @@
-// Calendar DB support added to existing DB module
+// extend DB module with calendar selection storage
 import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
@@ -14,7 +14,7 @@ ensureDataDir();
 
 const db = new Database(DB_PATH);
 
-// Simple migrations (email tables + calendar table)
+// Simple migrations (email tables + calendar table + calendar selection)
 db.exec(`
 CREATE TABLE IF NOT EXISTS email_tokens (
   id TEXT PRIMARY KEY,
@@ -68,6 +68,14 @@ CREATE TABLE IF NOT EXISTS calendar_events (
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_calendar_events_provider_id ON calendar_events(provider, provider_event_id);
+
+CREATE TABLE IF NOT EXISTS calendar_selections (
+  user_id TEXT PRIMARY KEY,
+  calendars TEXT,
+  sync_token TEXT,
+  updated_at INTEGER DEFAULT (strftime('%s','now'))
+);
+
 `);
 
 export function upsertToken(record: {
@@ -178,6 +186,32 @@ export function listCalendarEvents(userId: string, limit = 100) {
 
 export function markEventPriority(provider: string, provider_event_id: string, priority: number) {
   return db.prepare('UPDATE calendar_events SET priority = ?, updated_at = strftime("%s","now") WHERE provider = ? AND provider_event_id = ?').run(priority, provider, provider_event_id);
+}
+
+// Calendar selection helpers
+export function saveCalendarSelection(userId: string, calendars: string[]) {
+  const stmt = db.prepare(`
+    INSERT INTO calendar_selections (user_id, calendars, updated_at)
+    VALUES (?, ?, strftime('%s','now'))
+    ON CONFLICT(user_id) DO UPDATE SET calendars = excluded.calendars, updated_at = strftime('%s','now')
+  `);
+  stmt.run(userId, JSON.stringify(calendars));
+}
+
+export function getSelectedCalendars(userId: string) {
+  const row = db.prepare('SELECT calendars FROM calendar_selections WHERE user_id = ?').get(userId);
+  if (!row) return [];
+  try { return JSON.parse(row.calendars || '[]'); } catch { return []; }
+}
+
+export function saveSyncToken(userId: string, syncToken: string) {
+  const stmt = db.prepare(`UPDATE calendar_selections SET sync_token = ?, updated_at = strftime('%s','now') WHERE user_id = ?`);
+  stmt.run(syncToken, userId);
+}
+
+export function getSyncToken(userId: string) {
+  const row = db.prepare('SELECT sync_token FROM calendar_selections WHERE user_id = ?').get(userId);
+  return row ? row.sync_token : null;
 }
 
 export default db;

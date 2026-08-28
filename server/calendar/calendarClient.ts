@@ -1,5 +1,12 @@
-// Minimal Google Calendar client helpers (REST)
+// Calendar client REST helpers (list calendars, create/update/delete events)
 import fetch from 'node-fetch';
+
+export async function listCalendarsApi(accessToken: string) {
+  const url = `https://www.googleapis.com/calendar/v3/users/me/calendarList`;
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
+  if (!res.ok) throw new Error(`calendar list failed ${res.status}`);
+  return res.json();
+}
 
 export async function listCalendarEventsApi(accessToken: string, calendarId='primary', timeMin?: string, timeMax?: string) {
   const q: any = {};
@@ -29,4 +36,25 @@ export function parseEventItem(item: any) {
     isAllDay: isAllDay ? 1 : 0,
     raw: item,
   };
+}
+
+export async function createEventApi(accessToken: string, calendarId: string, event: any, sendUpdates = 'all') {
+  const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events?sendUpdates=${encodeURIComponent(sendUpdates)}`;
+  const res = await fetch(url, { method: 'POST', headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify(event) });
+  if (!res.ok) throw new Error(`create event failed ${res.status}`);
+  return res.json();
+}
+
+export async function updateEventApi(accessToken: string, calendarId: string, eventId: string, event: any, sendUpdates = 'all') {
+  const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(eventId)}?sendUpdates=${encodeURIComponent(sendUpdates)}`;
+  const res = await fetch(url, { method: 'PATCH', headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify(event) });
+  if (!res.ok) throw new Error(`update event failed ${res.status}`);
+  return res.json();
+}
+
+export async function deleteEventApi(accessToken: string, calendarId: string, eventId: string, sendUpdates = 'all') {
+  const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(eventId)}?sendUpdates=${encodeURIComponent(sendUpdates)}`;
+  const res = await fetch(url, { method: 'DELETE', headers: { Authorization: `Bearer ${accessToken}` } });
+  if (res.status !== 204) throw new Error(`delete event failed ${res.status}`);
+  return true;
 }
