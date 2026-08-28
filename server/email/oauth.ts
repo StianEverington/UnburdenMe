@@ -138,4 +138,5 @@ router.post('/disconnect', (req: Request, res: Response) => {
   res.json({ ok: true });
 });
 
+export { decrypt };
 export default router;
