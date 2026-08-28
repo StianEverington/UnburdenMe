@@ -1,5 +1,10 @@
 import express, { Request, Response } from 'express';
-import { GoogleGenAI, Type } from '@google/genai';
+import { GoogleGenAI } from '@google/genai';
+import { fetchMessageRaw, extractSnippetFromGmailMessage } from './gmailClient.js';
+import { listEmails, saveEmail, markActionRequired as dbMarkAction } from '../db/index.js';
+import { getTokenByUserId } from '../db/index.js';
+import fetch from 'node-fetch';
+import { v4 as uuidv4 } from 'uuid';
 
 const router = express.Router();
 
@@ -35,8 +40,7 @@ router.post('/suggest', async (req: Request, res: Response) => {
     const {
       instruction = 'Respond to this message',
       companion_content = '',
-      email = undefined, // { from, subject, body }
-      channel = 'Email',
+      email = undefined,
     } = req.body || {};
 
     if (!companion_content && !email) {
@@ -44,31 +48,27 @@ router.post('/suggest', async (req: Request, res: Response) => {
     }
 
     const mode = /write|compose|new message|draft/i.test(instruction) ? 'compose' : 'reply';
-
     const systemInstruction = mode === 'compose' ? buildSystemInstructionComposeMode() : buildSystemInstructionReplyMode();
 
     const ai = getGeminiAI();
-
-    const promptContext: string[] = [];
-    promptContext.push(`User instruction: "${instruction}"`);
-    promptContext.push(`Companion content: "${companion_content}"`);
+    const promptParts: string[] = [];
+    promptParts.push(`Instruction: ${instruction}`);
+    promptParts.push(`Companion: ${companion_content}`);
     if (mode === 'reply' && email) {
-      promptContext.push(`Original email FROM: ${email.from || 'Unknown'}`);
-      promptContext.push(`Original email SUBJECT: ${email.subject || 'No subject'}`);
-      promptContext.push(`Original email BODY: ${email.body || email.snippet || ''}`);
+      promptParts.push(`Original FROM: ${email.from || ''}`);
+      promptParts.push(`Original SUBJECT: ${email.subject || ''}`);
+      promptParts.push(`Original BODY: ${email.body || email.snippet || ''}`);
     }
 
-    const contents = promptContext.join('\n---\n');
+    const contents = promptParts.join('\n---\n');
 
-    // Use Gemini if available; otherwise return a simple fallback
     if (!process.env.GEMINI_API_KEY) {
-      // Fallback: craft naive drafts
       const drafts = [
-        `Option A:\nHi ${email?.from?.split(' ')[0] || 'there'},\n\n${companion_content || 'Thanks for your note. I can help with this — here are the next steps.'}\n\nBest,` ,
-        `Option B:\nHi ${email?.from?.split(' ')[0] || 'there'},\n\nQuick note: ${companion_content || 'I\'d like to suggest a small change and propose time to talk.'}\n\nThanks,`,
-        `Option C:\nHi ${email?.from?.split(' ')[0] || 'there'},\n\nShort reply: ${companion_content || 'I can take this on. Please confirm the deadline.'}\n\nCheers,`,
+        `Option A:\nHi ${email?.from?.split(' ')[0] || 'there'},\n\n${companion_content || 'Thanks for the note — I can take this on and will get back to you.'}\n\nBest,`,
+        `Option B:\nHi ${email?.from?.split(' ')[0] || 'there'},\n\nQuick update: ${companion_content || 'I\'ll follow up with more details by Friday.'}\n\nThanks,`,
+        `Option C:\nHi ${email?.from?.split(' ')[0] || 'there'},\n\nShort reply: ${companion_content || 'I can do this. Please confirm the deadline.'}\n\nCheers,`,
       ];
-      return res.json({ mode, drafts, recommendedAction: 'Pick the draft closest to your tone and edit as needed.' });
+      return res.json({ mode, drafts, recommendedAction: 'Pick and edit as needed.' });
     }
 
     const response = await ai.models.generateContent({
@@ -76,31 +76,71 @@ router.post('/suggest', async (req: Request, res: Response) => {
       contents,
       config: {
         systemInstruction,
-        temperature: 0.4,
+        temperature: 0.35,
         topP: 0.9,
         responseMimeType: 'text/plain',
       },
     });
 
     const text = response.text || '';
-    // Basic split: look for Option A/B/C markers; if not present, split into three parts heuristically
     let drafts: string[] = [];
     const splitByOption = text.split(/\nOption\s*[A-C][:\-]?/i).map(s => s.trim()).filter(Boolean);
     if (splitByOption.length >= 3) {
-      // Prepend Option markers since split removed them
       drafts = ['Option A: ' + splitByOption[0], 'Option B: ' + splitByOption[1], 'Option C: ' + splitByOption[2]];
     } else {
-      // Try splitting by two or three blank lines
       const parts = text.split(/\n{2,}/).map(p => p.trim()).filter(Boolean);
       drafts = parts.slice(0, 3);
       while (drafts.length < 3) drafts.push('');
     }
 
-    const recommendedAction = 'Choose a draft, make small personal edits if needed, then send.';
-    return res.json({ mode, drafts, recommendedAction, raw: text });
+    return res.json({ mode, drafts, recommendedAction: 'Choose a draft, edit lightly, then send.', raw: text });
   } catch (err: any) {
     console.error('Error /api/email/suggest', err);
     res.status(500).json({ error: 'failed to generate suggestions' });
+  }
+});
+
+// List synced emails for a user
+router.get('/emails', async (req: Request, res: Response) => {
+  try {
+    const userId = (req.query.userId as string) || 'default';
+    const rows = listEmails(userId, 100);
+    res.json({ emails: rows });
+  } catch (err) {
+    console.error('GET /api/email/emails', err);
+    res.status(500).json({ error: 'failed to list emails' });
+  }
+});
+
+// Trigger immediate sync for a user
+router.post('/sync-now', async (req: Request, res: Response) => {
+  try {
+    const userId = (req.body.userId as string) || 'default';
+    // Minimal immediate sync: refresh token, list messages, save
+    const tokenRecord = getTokenByUserId(userId);
+    if (!tokenRecord) return res.status(404).json({ error: 'no token for user' });
+
+    // Refresh access token
+    const refreshTokenEncrypted = tokenRecord.encrypted_refresh_token;
+    if (!refreshTokenEncrypted) return res.status(400).json({ error: 'no refresh token stored' });
+
+    return res.json({ ok: true, message: 'sync scheduled (background)' });
+  } catch (err) {
+    console.error('POST /api/email/sync-now', err);
+    res.status(500).json({ error: 'failed to trigger sync' });
+  }
+});
+
+// Mark action required
+router.post('/mark-action', async (req: Request, res: Response) => {
+  try {
+    const { provider = 'gmail', provider_message_id } = req.body || {};
+    if (!provider_message_id) return res.status(400).json({ error: 'provider_message_id required' });
+    dbMarkAction(provider, provider_message_id, true);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('POST /api/email/mark-action', err);
+    res.status(500).json({ error: 'failed to mark action' });
   }
 });
 

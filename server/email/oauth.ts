@@ -1,17 +1,10 @@
 import express, { Request, Response } from 'express';
 import fetch from 'node-fetch';
 import crypto from 'crypto';
-import fs from 'fs';
-import path from 'path';
+import { v4 as uuidv4 } from 'uuid';
+import { upsertToken, getTokenByUserId, deleteTokenByUserId } from '../db/index.js';
 
 const router = express.Router();
-
-const TOKENS_FILE = path.join(process.cwd(), 'data', 'emailTokens.json');
-const ensureDataDir = () => {
-  const dir = path.dirname(TOKENS_FILE);
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  if (!fs.existsSync(TOKENS_FILE)) fs.writeFileSync(TOKENS_FILE, JSON.stringify({}), 'utf8');
-};
 
 function getEncryptionKey(): Buffer {
   const k = process.env.ENCRYPTION_KEY || '';
@@ -40,21 +33,6 @@ function decrypt(data: string) {
   decipher.setAuthTag(tag);
   const decrypted = Buffer.concat([decipher.update(encrypted), decipher.final()]);
   return decrypted.toString('utf8');
-}
-
-function readTokens(): any {
-  ensureDataDir();
-  try {
-    const raw = fs.readFileSync(TOKENS_FILE, 'utf8');
-    return JSON.parse(raw || '{}');
-  } catch (e) {
-    return {};
-  }
-}
-
-function writeTokens(obj: any) {
-  ensureDataDir();
-  fs.writeFileSync(TOKENS_FILE, JSON.stringify(obj, null, 2), 'utf8');
 }
 
 // Start OAuth flow: user is expected to hit this endpoint and be redirected to Google.
@@ -121,22 +99,24 @@ router.get('/oauth2callback', async (req: Request, res: Response) => {
     const expiresIn = tokenJson.expires_in;
 
     if (!refreshToken) {
-      // Sometimes refresh token is not returned if user previously consented. In that case, we store access token temporarily and ask user to reconnect with prompt=consent
       console.warn('No refresh token returned from Google (user likely previously consented).');
     }
 
     const state = stateRaw ? JSON.parse(stateRaw) : { userId: 'default' };
     const userId = state.userId || 'default';
 
-    const tokens = readTokens();
-    tokens[userId] = tokens[userId] || {};
-    if (refreshToken) tokens[userId].refresh_token = encrypt(refreshToken);
-    if (accessToken) tokens[userId].access_token = accessToken;
-    if (expiresIn) tokens[userId].token_expires_at = Date.now() + Number(expiresIn) * 1000;
-    tokens[userId].provider = 'gmail';
-    writeTokens(tokens);
+    const id = uuidv4();
+    const encrypted = refreshToken ? encrypt(refreshToken) : undefined;
+    upsertToken({
+      id,
+      user_id: String(userId),
+      provider: 'gmail',
+      provider_user_id: undefined,
+      encrypted_refresh_token: encrypted,
+      access_token: accessToken,
+      token_expires_at: expiresIn ? Date.now() + Number(expiresIn) * 1000 : undefined,
+    });
 
-    // Redirect back to the app
     const redirectBack = process.env.AFTER_OAUTH_REDIRECT || '/';
     return res.redirect(redirectBack);
   } catch (err) {
@@ -147,16 +127,14 @@ router.get('/oauth2callback', async (req: Request, res: Response) => {
 
 router.get('/status', (req: Request, res: Response) => {
   const userId = (req.query.userId as string) || 'default';
-  const tokens = readTokens();
-  const info = tokens[userId] ? { connected: true, provider: tokens[userId].provider } : { connected: false };
+  const record = getTokenByUserId(userId);
+  const info = record ? { connected: true, provider: record.provider } : { connected: false };
   res.json(info);
 });
 
 router.post('/disconnect', (req: Request, res: Response) => {
   const userId = (req.body.userId as string) || 'default';
-  const tokens = readTokens();
-  if (tokens[userId]) delete tokens[userId];
-  writeTokens(tokens);
+  deleteTokenByUserId(userId);
   res.json({ ok: true });
 });
 

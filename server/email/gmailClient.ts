@@ -10,7 +10,6 @@ export async function fetchMessageRaw(accessToken: string, messageId: string) {
 }
 
 export function extractSnippetFromGmailMessage(msg: any) {
-  // best-effort extraction
   const snippet = msg.snippet || '';
   let subject = '';
   let from = '';
@@ -19,7 +18,6 @@ export function extractSnippetFromGmailMessage(msg: any) {
     if (h.name === 'Subject') subject = h.value;
     if (h.name === 'From') from = h.value;
   }
-  // body extraction (simple)
   let body = '';
   if (msg.payload && msg.payload.parts) {
     const part = msg.payload.parts.find((p: any) => p.mimeType === 'text/plain') || msg.payload.parts[0];
