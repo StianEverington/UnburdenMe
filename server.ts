@@ -35,6 +35,32 @@ const getGeminiAI = () => {
 // Helper function to generate realistic fallback triage responses when Gemini API rate limits or quota errors occur
 const SENSITIVE_DISCLAIMER_MESSAGE = 'Notice: This matter involves sensitive legal, HR, or clinical health themes. This engine provides executive workload organisation support and is not a substitute for formal HR, legal, or medical counsel. Please consult a qualified professional.';
 
+// Distinct, concrete style guidance per tone. Only the ONE matching the user's
+// selection is ever injected into a prompt - never all four at once - so the
+// model isn't given four competing tone instructions on every single call.
+const TONE_PROFILES: Record<string, { label: string; guidance: string }> = {
+  Assertive: {
+    label: 'Assertive & Clear Boundary',
+    guidance: `Confident and direct without being harsh. State the boundary or decision plainly in the first sentence - do not soften it with excessive hedging ("I was just wondering if maybe..."). Use short, declarative sentences. It's fine to say "I can't take this on" or "This won't work for me" outright. Warmth comes from clarity, not apology.`
+  },
+  Polite: {
+    label: 'Polite & Diplomatic',
+    guidance: `Warm, courteous, and relationship-preserving. Open with a brief acknowledgement of the other person's request before addressing it. Use softening phrases naturally ("I really appreciate you thinking of me, but...", "Would it be possible to..."). Sentences can be slightly longer and more conversational. Avoid blunt refusals - frame limits as trade-offs or alternatives.`
+  },
+  Formal: {
+    label: 'Formal Executive Style',
+    guidance: `Professional, composed, and structured, as you'd expect in a corporate or executive email. Use complete sentences, avoid contractions (use "cannot" not "can't", "I will" not "I'll"), and keep a measured, businesslike register throughout. No casual asides or humour. Precision over warmth.`
+  },
+  Direct: {
+    label: 'Direct & Concise',
+    guidance: `As few words as possible while remaining courteous. Lead with the answer or decision, skip preamble and pleasantries entirely, and avoid restating context the reader already knows. Favour fragments and short sentences over flowing prose. If a sentence can be cut without losing meaning, cut it.`
+  }
+};
+
+function getToneProfile(desired_tone: string) {
+  return TONE_PROFILES[desired_tone] || TONE_PROFILES.Assertive;
+}
+
 function generateFallbackResponse(user_input: string, instruction: string = 'Respond to this message', channel: string = 'Email', context_type: string = 'work', desired_tone: string = 'Assertive') {
   const isPersonal = context_type === 'personal' || ['whatsapp', 'sms', 'family', 'friend'].some(k => user_input.toLowerCase().includes(k) || channel.toLowerCase().includes(k));
   const isSpoken = channel === 'Phone Call' || channel === 'Face-to-Face';
@@ -229,8 +255,6 @@ OUTPUT FORMAT (JSON ONLY):
   "requires_human_disclaimer": true | false,
   "reason": "short explanation"
 }`,
-            temperature: 0.0,
-            topP: 0.95,
             responseMimeType: 'application/json',
             responseSchema: {
               type: Type.OBJECT,
@@ -302,8 +326,6 @@ RULES:
 - Group routine/internal updates into a single "Ignore / Process Later" category.
 - Do not make emotional comments or tell the user how to feel. Avoid using the word "stress".
 - Use British English spelling (e.g. organise, prioritise).`,
-            temperature: 0.2,
-            topP: 0.95,
           },
         });
 
@@ -353,8 +375,6 @@ RULES:
 - Focus purely on prioritisation and personal agency.
 - Do NOT use the word "stress".
 - Use British English (e.g., prioritise, organisation).`,
-            temperature: 0.6,
-            topP: 0.95,
           },
         });
 
@@ -420,6 +440,7 @@ app.post('/api/triage/full', async (req: Request, res: Response) => {
     let draftOutputText = '';
     if (apiKey) {
       try {
+        const toneProfile = getToneProfile(desired_tone);
         const promptContext = `
 [EXACT USER REQUEST / DESCRIPTION BOX INPUT]
 "${user_input}"
@@ -430,7 +451,8 @@ app.post('/api/triage/full', async (req: Request, res: Response) => {
 [SELECTED USER VARIABLES]
 - Communication Channel: ${channel}
 - Context Sphere: ${context_type} (personal, work, or hybrid)
-- Desired Tone: ${desired_tone} (e.g., Assertive & Clear Boundary, Polite & Diplomatic, Formal Executive Style, Direct & Concise)
+- Desired Tone: ${toneProfile.label}
+  Style requirement for this tone: ${toneProfile.guidance}
 ${metadata ? `- Workload Metadata: ${metadata.calendar_events_count} meetings, ${metadata.unread_email_count} unread emails/chats` : ''}
 
 [CRITICAL INSTRUCTIONS FOR GENERATING THE 3 RESPONSE CHOICES]
@@ -444,7 +466,10 @@ ${metadata ? `- Workload Metadata: ${metadata.calendar_events_count} meetings, $
 3. CHANNEL SPECIFICITY:
    - For written channels (Email, WhatsApp, SMS, Letter, Chat): Generate copy-pasteable written message drafts tailored to that specific medium.
    - For spoken verbal channels (Phone Call, Face-to-Face): Format as spoken scripts with clear opening line, core verbal talking points, pushback handling, and spoken vocal tone advice.
-4. CONTEXT & TONE REFLECTION: All 3 drafts MUST strongly reflect the chosen Context (${context_type}) and Desired Tone (${desired_tone}).
+4. CONTEXT & TONE REFLECTION: All 3 drafts MUST strongly reflect the chosen Context (${context_type}) and the following tone, applied consistently across ALL 3 options:
+   TONE: ${toneProfile.label}
+   ${toneProfile.guidance}
+   Do not blend this with other tones (e.g. do not soften an Assertive draft into something Polite, and do not pad a Direct draft with Formal-style preamble).
 5. SECTION 2 BREVITY: Section 2 ("ACTIONABLE OPTIONS") MUST provide a brief, concise 1-sentence overview for each of the 3 choice options (Option A, Option B, Option C) to prevent cognitive overload.
 6. SECTION 3 RECOMMENDED NEXT STEPS: In Section 3 ("### 3. CONSIDERATION / HUMAN CHECK"), at the start of this section under the subheading, suggest up to 3 numbered brief next steps / recommendations (1., 2., 3., or 1., 2. if only 1 or 2 apply) that are specifically based on the original input written in the first box and the instructions written by the user. Ensure all recommendations are safe, ethical, and non-discriminatory. If the input touches on a sensitive topic (medical distress, HR dispute, legal trouble, harassment, self-harm, or safety issue), recommend NOT engaging directly and seeking advice from a qualified professional, doctor, HR representative, or appropriate authority.`;
 
@@ -464,9 +489,14 @@ CORE RULES:
 2. SENSITIVE INFO PRESERVATION: Any bracketed placeholders like [Name], [Date], [Amount], [Client], [Order ID], [REDACTED] present in the user request MUST remain as anonymized placeholders in all 3 generated drafts.
 3. SCANNABLE FORMATTING: Keep prose minimal. Use bullet points, clear bold headings, and markdown text blocks with actual paragraph breaks (blank lines), NOT escaped characters like '\\n', so drafts are easy to read and copy.
 4. USER AUTONOMY & NEUTRAL FRAMING: Provide 3 distinct actionable choices (Option A, Option B, Option C) neutrally framed.
-5. LANGUAGE & CHANNEL STYLE:
+5. TONE COMPLIANCE (CRITICAL - this is the most common way drafts go wrong):
+   The user has selected exactly ONE tone: ${toneProfile.label}.
+   ${toneProfile.guidance}
+   - Apply this tone identically across ALL 3 options. Do not let any option drift toward a different tone (e.g. an Assertive draft must not read as apologetic; a Polite draft must not read as blunt).
+   - Do not hedge between tones "to be safe" - commit fully to the one selected tone, even if that means being more direct or more formal than a generic assistant reply would default to.
+6. LANGUAGE & CHANNEL STYLE:
    - Always use plain, simple British English with everyday terms and concepts (e.g., organise, prioritise, behaviour, calendar, favourite).
-   - Write natural, human-like language that sounds like a real person — avoid stiff corporate jargon, complex buzzwords, or robotic AI phrasing unless specifically requested by the user.
+   - Write natural, human-like language that sounds like a real person, consistent with the TONE above — avoid stiff corporate jargon, complex buzzwords, or robotic AI phrasing.
    - CHANNEL-SPECIFIC FORMATTING:
      * WRITTEN CHANNELS (Email, WhatsApp, Teams, SMS, Letter): Write clear, copy-pasteable written message drafts with appropriate greeting and structure.
      * SPOKEN VERBAL CHANNELS (Phone Call, Face-to-Face):
@@ -477,9 +507,8 @@ CORE RULES:
          2. Core Verbal Talking Points (bulleted concise phrases to say out loud)
          3. Handling Verbal Pushback (what to say out loud if pushed back)
          4. Spoken Delivery & Vocal Tone Advice (vocal tone, pacing, and composure)
-   - NEVER use the word 'stress' or its derivatives.
    - Works for BOTH professional and personal contexts.
-6. SECTION 3 RECOMMENDED NEXT STEPS & SAFETY:
+7. SECTION 3 RECOMMENDED NEXT STEPS & SAFETY:
    - In Section 3 ("### 3. CONSIDERATION / HUMAN CHECK"), right under the subheading, include up to 3 numbered brief next steps / recommendations (1., 2., 3. or 1., 2. if only 1 or 2 apply) tailored specifically to the user's input request and instructions.
    - Must be safe, non-discriminatory, and constructive.
    - If the user input involves sensitive matters (medical/clinical distress, mental health, legal dispute, harassment, discrimination, HR grievance, or safety concerns), suggest NOT engaging directly and seeking advice from a qualified professional, doctor, HR representative, or appropriate authority.
@@ -514,8 +543,6 @@ RESPONSE STRUCTURE REQUIRED:
 3. [Third specific recommendation/next step based on user input and instruction (omit if only 1 or 2 apply)]
 
 * **Focus Reminder** Whichever option you choose, remember to ensure it is the exact response you would like and give yourself time to relax`,
-            temperature: 0.45,
-            topP: 0.95,
           }
         });
 
@@ -574,7 +601,7 @@ app.post('/api/summary/generate', async (req: Request, res: Response) => {
       try {
         const ai = getGeminiAI();
         const response = await ai.models.generateContent({
-          model: 'gemini-2.5-flash',
+          model: 'gemini-3.6-flash',
           contents: `Summarise the following ${typeLabel} content to reduce cognitive load.
 Primary User Preferred Outcome Format: ${outcomeLabel}.
 Provide a clear, accurate, and to-the-point output using British English.
@@ -592,8 +619,6 @@ Content to summarise:
 ${textToSummarize}
 """`,
           config: {
-            temperature: 0.2,
-            topP: 0.95,
             responseMimeType: 'application/json',
             responseSchema: {
               type: Type.OBJECT,
@@ -729,8 +754,6 @@ User Challenge:
 ${promptText}
 """`,
           config: {
-            temperature: 0.3,
-            topP: 0.95,
             systemInstruction: `You are UnburdenMe Problem Solver, an expert decision-support assistant.
 
 STRICT SAFETY & COMPLIANCE DIRECTIVES:
@@ -932,7 +955,7 @@ app.post('/api/prep-tool/generate', async (req: Request, res: Response) => {
     if (process.env.GEMINI_API_KEY) {
       try {
         const response = await ai.models.generateContent({
-          model: 'gemini-2.5-flash',
+          model: 'gemini-3.6-flash',
           contents: `You are an empathetic, practical, non-judgmental preparation coach for an executive and personal workload companion.
 The user needs a personalized, highly practical preparation checklist before an upcoming visit, event, meeting, interview, or task.
 
