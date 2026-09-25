@@ -7,7 +7,6 @@ import express, { Request, Response } from 'express';
 import path from 'path';
 import dotenv from 'dotenv';
 import { GoogleGenAI, Type } from '@google/genai';
-import { createServer as createViteServer } from 'vite';
 
 dotenv.config();
 
@@ -1194,9 +1193,13 @@ Example JSON structure:
 });
 
 
-// Vite Integration
+// Vite Integration (local development only - Vercel serves the built frontend
+// separately and never runs this function, so Vite is imported dynamically
+// here rather than at the top of the file, to keep it out of the serverless
+// function bundle entirely).
 async function startServer() {
   if (process.env.NODE_ENV !== 'production') {
+    const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: 'spa',
@@ -1215,4 +1218,12 @@ async function startServer() {
   });
 }
 
-startServer();
+// Only start a long-running local server when NOT running on Vercel.
+// On Vercel, this file is imported by api/index.ts as a serverless function
+// instead - Vercel calls the exported Express app directly per-request and
+// must never have app.listen() or the Vite dev middleware invoked.
+if (!process.env.VERCEL) {
+  startServer();
+}
+
+export default app;
