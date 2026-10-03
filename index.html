@@ -1,0 +1,1178 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UnburdenMe – manage your workload and find the right words</title>
+<meta name="description" content="UnburdenMe is a calm place to manage messages, tasks and workload: write and reply to messages, set priorities, summarise long text, solve problems and prepare for events.">
+<meta name="theme-color" content="#4a6648">
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" href="icon-192x192.png">
+<link rel="apple-touch-icon" href="icon-192x192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700&family=Nunito+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f5f8f4;
+    --surface: #ffffff;
+    --ink: #26332a;
+    --muted: #5f6e63;
+    --line: #dbe4d9;
+    --sage: #4a6648;
+    --sage-soft: #e3ece1;
+    --peach: #f29479;
+    --peach-soft: #fdece6;
+    --peach-ink: #a4452a;
+    --danger: #a8321f;
+    --radius: 18px;
+    --display: "Quicksand", "Trebuchet MS", system-ui, sans-serif;
+    --body: "Nunito Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #131a15; --surface: #1c251f; --ink: #e9efe9; --muted: #a2b1a6;
+      --line: #2f3d33; --sage: #9dc49a; --sage-soft: #263629;
+      --peach: #f4a088; --peach-soft: #3a2822; --peach-ink: #f6b7a3; --danger: #f2b8b5;
+    }
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 17px; line-height: 1.6; }
+  :focus-visible { outline: 3px solid var(--peach); outline-offset: 2px; }
+  [hidden] { display: none !important; }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 0 clamp(14px, 4vw, 32px); }
+  h1, h2, h3, h4 { font-family: var(--display); letter-spacing: -0.01em; margin: 0; }
+  p { margin: 0; }
+
+  /* Header */
+  header.top { background: var(--surface); border-bottom: 1px solid var(--line); }
+  header.top .wrap { display: flex; align-items: center; gap: 12px; padding-top: 10px; padding-bottom: 10px; }
+  header.top img { height: 52px; width: auto; display: block; }
+  .spacer { flex: 1; }
+  .top-btn { font: inherit; font-weight: 600; font-size: .92rem; color: var(--ink); background: transparent; border: 1.5px solid var(--line); border-radius: 999px; padding: 7px 15px; cursor: pointer; }
+  .top-btn:hover { border-color: var(--peach); }
+  .count { display: inline-block; min-width: 1.4em; padding: 0 6px; margin-left: 6px; border-radius: 999px; background: var(--peach); color: #3a1608; font-size: .8rem; text-align: center; }
+
+  /* Tab bar */
+  .tabwrap { position: sticky; top: 0; z-index: 30; background: var(--bg); border-bottom: 1px solid var(--line); }
+  .tabbar { position: relative; display: flex; gap: 4px; overflow-x: auto; padding: 8px clamp(14px, 4vw, 32px); max-width: 980px; margin: 0 auto; scrollbar-width: none; }
+  .tabbar::-webkit-scrollbar { display: none; }
+  .indicator { position: absolute; top: 8px; bottom: 8px; left: 0; width: 0; border-radius: 999px; background: var(--sage-soft); border: 1.5px solid var(--sage); transition: transform .28s ease, width .28s ease; z-index: 0; }
+  .tab { position: relative; z-index: 1; flex: 0 0 auto; display: flex; align-items: center; gap: 8px; font: inherit; font-family: var(--display); font-weight: 600; font-size: 1rem; color: var(--muted); background: transparent; border: 0; border-radius: 999px; padding: 10px 18px; cursor: pointer; white-space: nowrap; }
+  .tab svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .tab[aria-selected="true"] { color: var(--sage); }
+  .tab:hover { color: var(--ink); }
+
+  /* Panels */
+  main { padding: clamp(20px, 4vw, 36px) 0 30px; }
+  .panel-head { margin-bottom: 18px; }
+  .panel-head h1 { font-size: clamp(1.7rem, 4vw, 2.4rem); line-height: 1.1; }
+  .panel-head p { color: var(--muted); margin-top: 6px; max-width: 60ch; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: clamp(16px, 3vw, 24px); margin-bottom: 16px; }
+  .card > h2 { font-size: 1.2rem; margin-bottom: 12px; }
+  label { display: block; font-weight: 700; font-size: .93rem; margin: 14px 0 6px; }
+  label:first-child { margin-top: 0; }
+  .hint { font-weight: 400; color: var(--muted); }
+  input[type="text"], input[type="datetime-local"], select, textarea { width: 100%; font: inherit; color: var(--ink); background: var(--bg); border: 1.5px solid var(--line); border-radius: 12px; padding: 11px 13px; }
+  textarea { min-height: 130px; resize: vertical; }
+  input[type="file"] { font: inherit; color: var(--muted); max-width: 100%; }
+  input[type="file"]::file-selector-button { font: inherit; font-weight: 600; color: var(--ink); background: var(--surface); border: 1.5px solid var(--sage); border-radius: 999px; padding: 7px 16px; margin-right: 10px; cursor: pointer; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .grid-3 label, .grid-2 label { margin-top: 14px; }
+  @media (max-width: 700px) { .grid-3 { grid-template-columns: 1fr; } }
+  @media (max-width: 560px) { .grid-2 { grid-template-columns: 1fr; } }
+  .actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 18px; }
+  .go { border: 0; background: var(--sage); color: #fff; font-family: var(--display); font-weight: 700; font-size: 1.05rem; padding: 13px 28px; border-radius: 999px; cursor: pointer; }
+  @media (prefers-color-scheme: dark) { .go { color: #12201a; } }
+  .go:disabled { opacity: .6; cursor: progress; }
+  .ghost { font: inherit; font-weight: 600; color: var(--ink); background: transparent; border: 1.5px solid var(--line); border-radius: 999px; padding: 11px 22px; cursor: pointer; }
+  .ghost:hover { border-color: var(--peach); }
+  .error { color: var(--danger); min-height: 1.3em; margin-top: 10px; font-size: .95rem; }
+  .notice { font-size: .88rem; color: var(--muted); margin-top: 10px; }
+  .empty { color: var(--muted); }
+
+  /* Sub tabs and chips */
+  .subtabs { display: inline-flex; gap: 4px; padding: 4px; background: var(--bg); border: 1.5px solid var(--line); border-radius: 999px; margin-bottom: 14px; }
+  .sub { font: inherit; font-weight: 600; color: var(--muted); background: transparent; border: 0; border-radius: 999px; padding: 8px 18px; cursor: pointer; }
+  .sub[aria-pressed="true"] { background: var(--sage); color: #fff; }
+  @media (prefers-color-scheme: dark) { .sub[aria-pressed="true"] { color: #12201a; } }
+  .presets { display: flex; flex-wrap: wrap; gap: 8px; }
+  .preset { font: inherit; font-weight: 600; font-size: .93rem; color: var(--ink); background: var(--surface); border: 1.5px solid var(--line); border-radius: 999px; padding: 8px 15px; cursor: pointer; }
+  .preset:hover { border-color: var(--peach); }
+  .preset[aria-pressed="true"] { border-color: var(--sage); background: var(--sage-soft); }
+  .fmt-desc { color: var(--muted); font-size: .92rem; margin: -4px 0 6px; }
+
+  /* Replace panel */
+  details.replace { margin-top: 16px; border: 1.5px dashed var(--line); border-radius: 14px; padding: 10px 14px; }
+  details.replace summary { cursor: pointer; font-weight: 700; }
+  .hint-line { color: var(--muted); font-size: .88rem; margin: 8px 0 10px; }
+  .rep-row { display: grid; grid-template-columns: 1fr auto 1fr auto; gap: 8px; align-items: center; margin-bottom: 8px; }
+  .rep-row .with { color: var(--muted); font-size: .85rem; }
+  @media (max-width: 600px) { .rep-row { grid-template-columns: 1fr auto; } .rep-row .with { display: none; } }
+  .icon-btn { font: inherit; font-size: 1.2rem; line-height: 1; color: var(--muted); background: transparent; border: 0; cursor: pointer; padding: 4px 8px; border-radius: 8px; }
+  .icon-btn:hover { color: var(--ink); background: var(--bg); }
+  .small-btn { font: inherit; font-weight: 600; font-size: .88rem; color: var(--ink); background: var(--surface); border: 1.5px solid var(--peach); border-radius: 999px; padding: 6px 15px; cursor: pointer; }
+  .small-btn:hover { background: var(--peach); color: #3a1608; }
+  .chip-btn { font: inherit; font-size: .84rem; color: var(--ink); background: var(--bg); border: 1.5px solid var(--line); border-radius: 999px; padding: 4px 12px; cursor: pointer; }
+  .chip-btn:hover { border-color: var(--sage); }
+
+  /* Results */
+  .results { display: grid; gap: 14px; }
+  .rcard { background: var(--peach-soft); border: 1px solid var(--line); border-radius: var(--radius); padding: clamp(14px, 3vw, 22px); }
+  .rc-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+  .rc-head h3 { font-size: 1.1rem; color: var(--peach-ink); }
+  .btn-row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+  .chip { font-size: .8rem; color: var(--muted); background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px; }
+  .rc-body { background: var(--surface); border-radius: 14px; padding: 16px 18px; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.65; }
+  .rc-body h4 { font-size: 1rem; margin: 12px 0 6px; white-space: normal; }
+  .rc-body h4:first-child { margin-top: 0; }
+  .rc-body p { margin: 0 0 6px; }
+  .check { display: flex; gap: 10px; align-items: flex-start; margin: 0 0 6px; white-space: normal; font-weight: 400; }
+  .check input { margin-top: 6px; accent-color: var(--sage); width: 18px; height: 18px; flex: 0 0 auto; }
+  .check input:checked + span { text-decoration: line-through; color: var(--muted); }
+  .sharebar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 12px; }
+  .share-label { font-size: .85rem; color: var(--muted); margin-right: 4px; }
+  .assume { background: var(--surface); border-left: 4px solid var(--peach); border-radius: 10px; padding: 10px 14px; font-size: .93rem; color: var(--muted); }
+
+  /* Priorities */
+  .alerts { display: grid; gap: 8px; margin-bottom: 14px; }
+  .alert { display: flex; align-items: center; gap: 8px; background: var(--peach-soft); border: 1.5px solid var(--peach); border-radius: 14px; padding: 10px 14px; }
+  .alert .icon-btn { margin-left: auto; }
+  .gauge { display: flex; height: 12px; border-radius: 999px; overflow: hidden; background: var(--bg); border: 1px solid var(--line); margin: 6px 0 8px; }
+  .gauge span { display: block; height: 100%; }
+  .g-high { background: var(--peach); } .g-mid { background: var(--sage); } .g-low { background: var(--line); }
+  .gauge-text { color: var(--muted); font-size: .92rem; margin-bottom: 10px; }
+  ul.tasks { list-style: none; margin: 0; padding: 0; }
+  li.task { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: start; padding: 12px 0; border-top: 1px solid var(--line); }
+  li.task:first-child { border-top: 0; }
+  li.task input[type="checkbox"] { width: 20px; height: 20px; margin-top: 4px; accent-color: var(--sage); }
+  .t-title { font-weight: 700; overflow-wrap: anywhere; }
+  li.task.done .t-title { text-decoration: line-through; color: var(--muted); }
+  .t-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; font-size: .84rem; color: var(--muted); align-items: center; }
+  .badge { border-radius: 999px; padding: 1px 10px; border: 1.5px solid var(--line); font-weight: 600; }
+  .b-high { background: var(--peach-soft); color: var(--peach-ink); border-color: var(--peach); }
+  .b-mid { background: var(--sage-soft); color: var(--sage); border-color: var(--sage); }
+  .overdue { color: var(--danger); font-weight: 700; }
+  .t-actions { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+  @media (max-width: 560px) { li.task { grid-template-columns: auto 1fr; } .t-actions { grid-column: 2; justify-content: flex-start; } }
+
+  /* Dialogs */
+  dialog { width: min(720px, calc(100% - 28px)); max-height: 88vh; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); color: var(--ink); padding: 0; }
+  dialog::backdrop { background: rgba(15, 22, 17, .6); }
+  .dlg-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 16px 22px; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: var(--surface); }
+  .dlg-head h2 { font-size: 1.3rem; }
+  .dlg-body { padding: 18px 22px 24px; overflow-y: auto; }
+  .dlg-body h3 { font-size: 1.05rem; margin: 18px 0 6px; }
+  .dlg-body p, .dlg-body li { margin-bottom: 8px; }
+  .dlg-body ul { padding-left: 20px; margin: 0 0 8px; }
+  .ph { background: var(--peach-soft); color: var(--peach-ink); border-radius: 6px; padding: 0 5px; font-weight: 700; }
+  details.note { border-top: 1px solid var(--line); padding: 10px 0; }
+  details.note summary { cursor: pointer; }
+  .n-kind { font-size: .78rem; font-weight: 700; color: var(--sage); background: var(--sage-soft); border-radius: 999px; padding: 1px 9px; margin-right: 6px; }
+  .n-date { font-size: .82rem; color: var(--muted); }
+  pre.n-text { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; background: var(--bg); border-radius: 12px; padding: 12px 14px; margin: 10px 0; }
+  .keep-row { display: flex; align-items: center; gap: 8px; margin: 8px 0 4px; font-size: .92rem; }
+
+  footer { padding: 10px 0 46px; color: var(--muted); font-size: .9rem; }
+  footer p { margin-bottom: 8px; max-width: 72ch; }
+  footer button { font: inherit; color: var(--sage); background: none; border: 0; padding: 0; text-decoration: underline; cursor: pointer; }
+
+  #toast { position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 30px); background: var(--ink); color: var(--bg); padding: 10px 18px; border-radius: 999px; opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; z-index: 100; font-size: .92rem; max-width: calc(100% - 32px); text-align: center; }
+  #toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .indicator, #toast { transition: none; } }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <a href="./" aria-label="UnburdenMe home"><img src="logo.png" alt="UnburdenMe"></a>
+    <span class="spacer"></span>
+    <button class="top-btn" id="openSaved" type="button">Saved notes<span class="count" id="savedCount" hidden>0</span></button>
+    <button class="top-btn" id="openPrivacy" type="button">Privacy</button>
+  </div>
+</header>
+
+<div class="tabwrap">
+  <div class="tabbar" id="tabbar" role="tablist" aria-label="UnburdenMe tools">
+    <span class="indicator" id="indicator" aria-hidden="true"></span>
+    <button class="tab" role="tab" id="tab-companion" data-tab="companion" aria-selected="true" aria-controls="panel-companion">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h11a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H9l-4 3v-3H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/><path d="M19 9h1a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2v2l-3-2h-4a2 2 0 0 1-2-2"/></svg>Companion</button>
+    <button class="tab" role="tab" id="tab-priorities" data-tab="priorities" aria-selected="false" aria-controls="panel-priorities">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 6h11M10 12h11M10 18h11"/><path d="M3 6l1.5 1.5L7 5M3 12l1.5 1.5L7 11M3 18l1.5 1.5L7 17"/></svg>Priorities</button>
+    <button class="tab" role="tab" id="tab-summary" data-tab="summary" aria-selected="false" aria-controls="panel-summary">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18M6 10h12M9 15h6M11 20h2"/></svg>Micro Summary</button>
+    <button class="tab" role="tab" id="tab-solver" data-tab="solver" aria-selected="false" aria-controls="panel-solver">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="4.5" r="2"/><path d="M12 6.5V12M12 12L5.5 17M12 12l6.5 5"/><circle cx="5" cy="19" r="2"/><circle cx="19" cy="19" r="2"/></svg>Problem Solver</button>
+    <button class="tab" role="tab" id="tab-prep" data-tab="prep" aria-selected="false" aria-controls="panel-prep">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 13l2 2 4-4"/></svg>Prep</button>
+  </div>
+</div>
+
+<main class="wrap">
+
+  <!-- ============ 1. COMPANION ============ -->
+  <section class="panel" id="panel-companion" role="tabpanel" aria-labelledby="tab-companion">
+    <div class="panel-head">
+      <h1>Companion</h1>
+      <p>Find the right words for an email, message, letter or phone call, or draft a reply to one you've received.</p>
+    </div>
+
+    <div class="card">
+      <h2>Start from a common situation</h2>
+      <div class="subtabs" id="cmpSubs" role="group" aria-label="Type of situation">
+        <button class="sub" type="button" data-set="personal" aria-pressed="true">Personal</button>
+        <button class="sub" type="button" data-set="workplace" aria-pressed="false">Workplace</button>
+      </div>
+      <div class="presets" id="cmpPresets"></div>
+      <p class="notice">Choosing one fills in a starting point and suggests settings. Edit the [brackets], then press Unburden Me.</p>
+    </div>
+
+    <div class="card">
+      <h2>Tell us what you need</h2>
+      <label for="cmpRequest">What do you need to say or ask for?</label>
+      <textarea id="cmpRequest" placeholder="Describe your situation, what you want to happen, and any dates or details that matter."></textarea>
+      <label for="cmpMessage">Respond to this message <span class="hint">(optional: paste the message you've received)</span></label>
+      <textarea id="cmpMessage" placeholder="Paste the message or request you want to reply to."></textarea>
+      <div class="grid-3">
+        <div><label for="cmpChannel">Channel</label>
+          <select id="cmpChannel"><option>Email</option><option>Message</option><option>Letter</option><option>Phone call template</option></select></div>
+        <div><label for="cmpContext">Context</label>
+          <select id="cmpContext"><option>Personal and family</option><option>Workplace and professional</option><option selected>Balanced</option></select></div>
+        <div><label for="cmpTone">Tone</label>
+          <select id="cmpTone"><option>Polite and diplomatic</option><option>Assertive</option><option>Formal</option><option>Concise</option></select></div>
+      </div>
+      <div data-replacer="cmp"></div>
+      <div class="actions">
+        <button class="go" id="cmpGo" type="button">Unburden Me</button>
+        <button class="ghost" id="cmpClear" type="button">Clear</button>
+      </div>
+      <div class="error" id="cmpErr" role="alert"></div>
+    </div>
+    <div class="results" id="cmpOut" aria-live="polite"></div>
+  </section>
+
+  <!-- ============ 2. PRIORITIES ============ -->
+  <section class="panel" id="panel-priorities" role="tabpanel" aria-labelledby="tab-priorities" hidden>
+    <div class="panel-head">
+      <h1>Priorities</h1>
+      <p>Add the messages, emails and tasks on your plate, and see what needs attention first.</p>
+    </div>
+    <div class="alerts" id="alerts" role="status"></div>
+
+    <div class="card">
+      <h2>Add something</h2>
+      <form id="taskForm" novalidate>
+        <label for="tTitle">What is it?</label>
+        <input type="text" id="tTitle" placeholder="e.g. Reply to Sam about the invoice">
+        <div class="grid-2">
+          <div><label for="tPriority">Priority</label>
+            <select id="tPriority"><option value="high">High priority</option><option value="mid" selected>Mid priority</option><option value="low">Low priority</option></select></div>
+          <div><label for="tType">Type</label>
+            <select id="tType"><option value="email">Email</option><option value="message">Message</option><option value="event">Calendar event</option><option value="task" selected>Task</option><option value="general">General</option></select></div>
+          <div><label for="tDeadline">Deadline <span class="hint">(optional)</span></label>
+            <input type="datetime-local" id="tDeadline"></div>
+          <div><label for="tReminder">Reminder <span class="hint">(optional)</span></label>
+            <input type="datetime-local" id="tReminder"></div>
+        </div>
+        <div class="actions"><button class="go" type="submit">Add</button></div>
+        <div class="error" id="taskErr" role="alert"></div>
+        <p class="notice">Reminders pop up while this page is open. To be alerted when it's closed, add the item to your calendar using the buttons on the list.</p>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2>Your list</h2>
+      <div id="gaugeBox"></div>
+      <ul class="tasks" id="taskList"></ul>
+      <div class="actions" id="listActions" hidden>
+        <button class="ghost" id="allIcs" type="button">Add all deadlines to my calendar</button>
+        <button class="ghost" id="clearDone" type="button">Remove completed</button>
+      </div>
+      <p class="notice">Your list is saved in this browser on this device only.</p>
+    </div>
+
+    <div class="card">
+      <h2>Priority summary</h2>
+      <p class="hint-line">Get a suggested order, ideas for making the big items manageable, and a clean to-do list.</p>
+      <div data-replacer="pri"></div>
+      <div class="actions"><button class="go" id="priGo" type="button">Create priority summary</button></div>
+      <div class="error" id="priErr" role="alert"></div>
+    </div>
+    <div class="results" id="priOut" aria-live="polite"></div>
+  </section>
+
+  <!-- ============ 3. MICRO SUMMARY ============ -->
+  <section class="panel" id="panel-summary" role="tabpanel" aria-labelledby="tab-summary" hidden>
+    <div class="panel-head">
+      <h1>Micro Summary</h1>
+      <p>Turn long emails, message threads, reports and meeting notes into the few points you need, with actions, decisions and deadlines picked out.</p>
+    </div>
+    <div class="card">
+      <h2>What would you like back?</h2>
+      <div class="subtabs" id="sumFormats" role="group" aria-label="Summary style">
+        <button class="sub" type="button" data-fmt="bullets" aria-pressed="true">Bullet points</button>
+        <button class="sub" type="button" data-fmt="paragraph" aria-pressed="false">Written paragraph</button>
+        <button class="sub" type="button" data-fmt="checklist" aria-pressed="false">Checklist</button>
+        <button class="sub" type="button" data-fmt="digest" aria-pressed="false">Summary digest</button>
+      </div>
+      <p class="fmt-desc" id="fmtDesc"></p>
+    </div>
+    <div class="card">
+      <h2>Add your text</h2>
+      <label for="sumFile">Attach a file <span class="hint">(.txt, .md, .csv, .docx or a text-based PDF)</span></label>
+      <input type="file" id="sumFile" accept=".txt,.md,.csv,.json,.docx,.pdf">
+      <label for="sumText">Or paste it here</label>
+      <textarea id="sumText" style="min-height:220px" placeholder="Paste an email, a message thread, a report, meeting notes…"></textarea>
+      <p class="notice" id="sumCount"></p>
+      <div data-replacer="sum"></div>
+      <div class="actions">
+        <button class="ghost" id="sumApply" type="button">Apply replace</button>
+        <button class="go" id="sumGo" type="button">Summarise</button>
+        <button class="ghost" id="sumClear" type="button">Clear</button>
+      </div>
+      <div class="error" id="sumErr" role="alert"></div>
+      <p class="notice">Anything you summarise is sent to Google's Gemini service. Please hide names and private details first, and don't upload anything confidential.</p>
+    </div>
+    <div class="results" id="sumOut" aria-live="polite"></div>
+  </section>
+
+  <!-- ============ 4. PROBLEM SOLVER ============ -->
+  <section class="panel" id="panel-solver" role="tabpanel" aria-labelledby="tab-solver" hidden>
+    <div class="panel-head">
+      <h1>Problem Solver</h1>
+      <p>Describe what you're facing and get three different ways forward, each with pros, cons and clear next steps.</p>
+    </div>
+    <div class="card">
+      <label for="solText">What's the challenge?</label>
+      <textarea id="solText" style="min-height:190px" placeholder="Tell us what's happening, who is involved, what you've tried, and what you'd like to be different. The more detail you give, the more specific the options."></textarea>
+      <div data-replacer="sol"></div>
+      <div class="actions">
+        <button class="go" id="solGo" type="button">Generate three solutions</button>
+        <button class="ghost" id="solClear" type="button">Clear</button>
+      </div>
+      <div class="error" id="solErr" role="alert"></div>
+      <p class="notice">These are general suggestions based only on what you write. For health, legal or money matters, please also speak to a qualified professional.</p>
+    </div>
+    <div class="results" id="solOut" aria-live="polite"></div>
+  </section>
+
+  <!-- ============ 5. PREP ============ -->
+  <section class="panel" id="panel-prep" role="tabpanel" aria-labelledby="tab-prep" hidden>
+    <div class="panel-head">
+      <h1>Prep</h1>
+      <p>Get a simple, personal checklist for an event, meeting, interview or key task.</p>
+    </div>
+    <div class="card">
+      <h2>What are you preparing for?</h2>
+      <div class="presets" id="prepPresets"></div>
+      <label for="prepWhat">Describe it</label>
+      <input type="text" id="prepWhat" placeholder="e.g. Job interview for a team leader role on Thursday">
+      <div class="grid-2">
+        <div><label for="prepCat">Category</label>
+          <select id="prepCat"><option>Meeting or discussion</option><option>A job</option><option>A social event</option><option>A key task</option></select></div>
+      </div>
+      <label for="prepNotes">Personal context or notes <span class="hint">(optional)</span></label>
+      <textarea id="prepNotes" placeholder="Anything that should shape the checklist: how you feel about it, what you're worried about, time you have, who will be there…"></textarea>
+      <div data-replacer="prep"></div>
+      <div class="actions">
+        <button class="go" id="prepGo" type="button">Generate personalised prep checklist</button>
+        <button class="ghost" id="prepClear" type="button">Clear</button>
+      </div>
+      <div class="error" id="prepErr" role="alert"></div>
+    </div>
+    <div class="results" id="prepOut" aria-live="polite"></div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>AI-generated text can contain mistakes. Please check anything important before you use or send it.</p>
+    <p><strong>UnburdenMe is not a counselling or crisis service.</strong> If you're struggling or need someone to talk to, Samaritans are free to call on 116 123, any time. In an emergency, call 999.</p>
+    <p><button type="button" id="footPrivacy">Privacy notice</button> · <button type="button" id="footSaved">Saved notes</button></p>
+  </div>
+</footer>
+
+<!-- Saved notes -->
+<dialog id="savedDlg" aria-labelledby="savedTitle">
+  <div class="dlg-head"><h2 id="savedTitle">Saved notes</h2><button class="small-btn" type="button" data-close="savedDlg">Close</button></div>
+  <div class="dlg-body">
+    <div class="subtabs" id="savedTabs" role="group" aria-label="Notes view">
+      <button class="sub" type="button" data-view="saved" aria-pressed="true">Saved</button>
+      <button class="sub" type="button" data-view="recent" aria-pressed="false">Recent</button>
+    </div>
+    <p class="notice">Everything here is stored in this browser on this device only. It isn't sent anywhere.</p>
+    <div class="keep-row" id="keepRecentRow" hidden><input type="checkbox" id="keepRecent" checked><label for="keepRecent" style="margin:0;font-weight:400">Keep my last 10 results on this device</label></div>
+    <div id="savedList"></div>
+    <div class="actions"><button class="ghost" id="clearView" type="button">Clear this list</button></div>
+  </div>
+</dialog>
+
+<!-- Privacy notice -->
+<dialog id="privacyDlg" aria-labelledby="privTitle">
+  <div class="dlg-head"><h2 id="privTitle">Privacy notice</h2><button class="small-btn" type="button" data-close="privacyDlg">Close</button></div>
+  <div class="dlg-body">
+    <p><em>Last updated: October 2026</em></p>
+
+    <h3>Who we are</h3>
+    <p>UnburdenMe (unburdenme.co.uk) is run by <span class="ph">UnburdenMe</span>. If you have any questions about this notice or your information, contact us at <span class="ph">UnburdenMe.co.uk@gmail.com</span>.</p>
+
+    <h3>What this site does with what you type</h3>
+    <p>When you press a button such as Unburden Me, Summarise or Create priority summary, the text you've entered is sent to a small service we run, and from there to Google's Gemini AI service, which writes the reply. We don't keep a copy of what you send or what comes back. We don't ask you to create an account, and we don't ask for your name or email address.</p>
+    <p>Because your text goes to Google, <strong>please don't enter passwords, bank or card details, medical records, or anything else you wouldn't want a third party to see.</strong> The free version of Google's service may use what is sent to improve its products. The "Hide names or private details" option swaps the words you list for placeholders on your device before anything is sent. It only hides the exact words you list, so please check your text before you press go.</p>
+
+    <h3>What is stored on your device</h3>
+    <p>Your to-do list, any notes you choose to save, and (if you leave it switched on) your last 10 results are kept in your browser's own storage, on your device only. We can't see them. Clearing your browser data, or using the delete button below, removes them.</p>
+
+    <h3>Other services involved</h3>
+    <ul>
+      <li><strong>Cloudflare</strong> runs the small service that passes your text to Google. It may record technical details such as your IP address for security and to limit misuse.</li>
+      <li><strong>Google (Gemini)</strong> receives your text in order to write the response.</li>
+      <li><strong>GitHub</strong> hosts this website and may record technical details of visits.</li>
+      <li><strong>Google Fonts</strong> supplies the site's typefaces, which means Google can see your IP address when the page loads.</li>
+      <li><strong>cdnjs</strong> supplies small tools for reading Word and PDF files. They are only loaded if you attach one of those file types, and the file is read on your device.</li>
+    </ul>
+    <p>We don't use advertising, tracking or analytics tools of our own, and we don't set cookies of our own.</p>
+
+    <h3>Your rights</h3>
+    <p>Under UK data protection law you have rights over your personal information, including to ask what is held about you, to have it corrected or deleted, and to object to how it is used. Since we don't keep what you type, most of your information is on your own device and in the control of the services listed above. You can also complain to the Information Commissioner's Office at ico.org.uk or on 0303 123 1113.</p>
+
+    <h3>Not a counselling service</h3>
+    <p>UnburdenMe helps you organise and communicate. It isn't counselling, medical, legal or financial advice. If you need someone to talk to, Samaritans are free on 116 123, any time. In an emergency, call 999.</p>
+
+    <h3>Changes</h3>
+    <p>If we change this notice, we'll update the date at the top.</p>
+
+    <div class="actions"><button class="ghost" id="wipeAll" type="button">Delete everything stored on this device</button></div>
+  </div>
+</dialog>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* =====================================================
+     SETTINGS – paste your Cloudflare Worker address below
+     ===================================================== */
+  const CONFIG = {
+    WORKER_URL: "unburdenme-ai.stianeverington.workers.dev"
+  };
+  const MAX_CHARS = 60000;               // longest text sent for summarising
+  const DELIM = "=====OPTION=====";     // separates drafts in the AI's reply
+
+  /* ---------- tiny helpers ---------- */
+  const $ = (s, r) => (r || document).querySelector(s);
+  const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+  function h(tag, attrs) {
+    const e = document.createElement(tag);
+    if (attrs) for (const [k, v] of Object.entries(attrs)) {
+      if (v === null || v === undefined || v === false) continue;
+      if (k === "class") e.className = v;
+      else if (k.startsWith("on") && typeof v === "function") e.addEventListener(k.slice(2), v);
+      else e.setAttribute(k, v === true ? "" : v);
+    }
+    for (let i = 2; i < arguments.length; i++) {
+      [].concat(arguments[i]).forEach((k) => {
+        if (k === null || k === undefined || k === false) return;
+        e.append(k.nodeType ? k : document.createTextNode(String(k)));
+      });
+    }
+    return e;
+  }
+  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  const fmt = (d) => { const x = new Date(d); return isNaN(x) ? "" : x.toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" }); };
+  const slug = (s) => (s || "unburdenme").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "unburdenme";
+  const escHtml = (s) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const escRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+  const KEYS = { tasks: "ubm_tasks", saved: "ubm_saved", recent: "ubm_recent", keep: "ubm_keep_recent" };
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } },
+    del(k) { try { localStorage.removeItem(k); } catch (e) {} }
+  };
+
+  let toastTimer;
+  function toast(msg) {
+    const t = $("#toast"); t.textContent = msg; t.classList.add("show");
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("show"), 2800);
+  }
+  async function copyText(text) {
+    try { await navigator.clipboard.writeText(text); return true; }
+    catch (e) {
+      try {
+        const ta = h("textarea", { style: "position:fixed;opacity:0" }); ta.value = text;
+        document.body.append(ta); ta.select(); const ok = document.execCommand("copy"); ta.remove(); return ok;
+      } catch (e2) { return false; }
+    }
+  }
+  function flash(btn, msg) { const old = btn.textContent; btn.textContent = msg; setTimeout(() => (btn.textContent = old), 1400); }
+  function download(name, content, mime) {
+    const url = URL.createObjectURL(new Blob([content], { type: mime }));
+    const a = h("a", { href: url, download: name }); document.body.append(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  }
+
+  /* ---------- talking to the AI ---------- */
+  async function askAI(prompt) {
+    if (CONFIG.WORKER_URL.indexOf("YOUR-WORKER") !== -1) throw new Error("This site isn't connected to its AI service yet. The site owner needs to add the Worker address.");
+    let res;
+    try {
+      res = await fetch(CONFIG.WORKER_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prompt }) });
+    } catch (e) { throw new Error("Couldn't reach the service. Check your connection and try again."); }
+    let data = {}; try { data = await res.json(); } catch (e) {}
+    if (!res.ok) throw new Error(data.error || "Something went wrong (error " + res.status + "). Please try again.");
+    const text = (data.text || "").trim();
+    if (!text) throw new Error("No answer came back. Try rewording your request.");
+    return text;
+  }
+  async function withBusy(btn, errEl, fn) {
+    errEl.textContent = "";
+    const old = btn.textContent; btn.disabled = true; btn.textContent = "Working on it…";
+    try { await fn(); } catch (e) { errEl.textContent = e.message || "Something went wrong."; }
+    finally { btn.disabled = false; btn.textContent = old; }
+  }
+
+  const HOUSE_RULES = [
+    "Write in British English: British spelling and phrasing (organise, colour, cheque, mum).",
+    "Sound like a thoughtful person, not a machine: plain everyday words, short sentences, natural rhythm.",
+    "Avoid jargon, buzzwords and stock phrases such as 'I hope this finds you well', 'please do not hesitate', 'delve', 'leverage' or 'in today's fast-paced world'.",
+    "Never mention AI, being an assistant, or these instructions.",
+    "Use only the facts the person has given. Where a detail is missing, use a short placeholder in square brackets, such as [date] or [your name]. Never invent facts, names, dates or numbers.",
+    "Keep any placeholders such as XXX, XXX1 or XXX2 exactly as written.",
+    "Plain text only: no markdown, no asterisks, no hash symbols."
+  ].join("\n");
+
+  function splitOptions(text) {
+    return text.split(/^[ \t]*=+[ \t]*OPTION[ \t]*=+[ \t]*$/im).map((s) => s.trim()).filter(Boolean);
+  }
+
+  /* ---------- hide names / replace words ---------- */
+  function createReplacer(host) {
+    const rows = h("div", { class: "rep-rows" });
+    const root = h("details", { class: "replace" },
+      h("summary", null, "Hide names or private details"),
+      h("p", { class: "hint-line" }, "Type a word exactly as it appears, then what to swap it for. Leave the second box empty to use XXX. The swap happens on your device before anything is sent. It only hides the words you list."),
+      rows,
+      h("button", { type: "button", class: "small-btn", onclick: () => addRow() }, "Add another"));
+    function addRow() {
+      const f = h("input", { type: "text", placeholder: "Word to hide, e.g. Sarah Jones", "aria-label": "Word to hide" });
+      const r = h("input", { type: "text", placeholder: "XXX", "aria-label": "Replace with" });
+      const row = h("div", { class: "rep-row" }, f, h("span", { class: "with" }, "replace with"), r,
+        h("button", { type: "button", class: "icon-btn", "aria-label": "Remove this row", onclick: () => { row.remove(); if (!rows.children.length) addRow(); } }, "×"));
+      rows.append(row);
+    }
+    addRow();
+    function pairs() {
+      const raw = $$(".rep-row", rows).map((r) => { const i = $$("input", r); return { find: i[0].value.trim(), repl: i[1].value.trim() }; }).filter((p) => p.find);
+      const defaults = raw.filter((p) => !p.repl).length; let n = 0;
+      return raw.map((p) => ({ find: p.find, repl: p.repl || (defaults > 1 ? "XXX" + (++n) : "XXX") }));
+    }
+    function applyWith(ps, text) {
+      return ps.slice().sort((a, b) => b.find.length - a.find.length).reduce((t, p) => {
+        const pre = /^[\p{L}\p{N}]/u.test(p.find) ? "(?<![\\p{L}\\p{N}])" : "";
+        const post = /[\p{L}\p{N}]$/u.test(p.find) ? "(?![\\p{L}\\p{N}])" : "";
+        return t.replace(new RegExp(pre + escRe(p.find) + post, "giu"), () => p.repl);
+      }, text);
+    }
+    function restoreWith(ps, text) {
+      const seen = new Set();
+      return ps.filter((p) => { if (seen.has(p.repl)) return false; seen.add(p.repl); return true; })
+        .sort((a, b) => b.repl.length - a.repl.length)
+        .reduce((t, p) => t.replace(new RegExp(escRe(p.repl), "g"), () => p.find), text);
+    }
+    host.append(root);
+    return {
+      apply: (t) => applyWith(pairs(), t),
+      snapshot: () => { const ps = pairs(); return { has: ps.length > 0, restore: (t) => restoreWith(ps, t) }; }
+    };
+  }
+  const reps = {};
+  $$("[data-replacer]").forEach((host) => { reps[host.dataset.replacer] = createReplacer(host); });
+
+  /* ---------- sharing ---------- */
+  function shareEmail(title, body) {
+    const url = "mailto:?subject=" + encodeURIComponent(title) + "&body=" + encodeURIComponent(body);
+    if (url.length > 1900) {
+      copyText(body);
+      location.href = "mailto:?subject=" + encodeURIComponent(title) + "&body=" + encodeURIComponent("(Paste the copied text here)");
+      toast("Too long to attach automatically, so it's copied. Paste it into your email.");
+    } else location.href = url;
+  }
+  function downloadWord(title, text) {
+    const html = "<html><head><meta charset=\"utf-8\"><title>" + escHtml(title) + "</title></head><body><h2>" + escHtml(title) + "</h2>" +
+      text.split("\n").map((l) => "<p>" + (escHtml(l) || "&nbsp;") + "</p>").join("") + "</body></html>";
+    download(slug(title) + ".doc", html, "application/msword");
+  }
+  function shareBar(getText, title) {
+    const mk = (label, fn) => h("button", { type: "button", class: "chip-btn", onclick: fn }, label);
+    const bar = h("div", { class: "sharebar" }, h("span", { class: "share-label" }, "Share or download:"),
+      mk("Text file", () => download(slug(title) + ".txt", getText(), "text/plain")),
+      mk("Word file", () => downloadWord(title, getText())),
+      mk("Google Docs", async () => { await copyText(getText()); window.open("https://docs.new", "_blank", "noopener"); toast("Copied. Paste it into the new document."); }),
+      mk("Email", () => shareEmail(title, getText())),
+      mk("WhatsApp", () => window.open("https://wa.me/?text=" + encodeURIComponent(getText()), "_blank", "noopener")),
+      mk("Text message", () => { location.href = "sms:?&body=" + encodeURIComponent(getText()); }));
+    if (navigator.share) bar.append(mk("More…", () => navigator.share({ title, text: getText() }).catch(() => {})));
+    return bar;
+  }
+
+  /* ---------- saved notes and recent results ---------- */
+  const KIND = { companion: "Companion", priorities: "Priorities", summary: "Micro Summary", solver: "Problem Solver", prep: "Prep" };
+  function updateSavedCount() {
+    const n = store.get(KEYS.saved, []).length; const c = $("#savedCount");
+    c.textContent = n; c.hidden = n === 0;
+  }
+  function addSaved(item) {
+    const list = store.get(KEYS.saved, []);
+    list.unshift({ id: uid(), kind: item.kind, title: item.title, text: item.text, at: new Date().toISOString() });
+    if (!store.set(KEYS.saved, list.slice(0, 100))) toast("Couldn't save. Your browser may be blocking storage.");
+    else toast("Saved to your notes");
+    updateSavedCount(); renderSaved();
+  }
+  function addRecent(item) {
+    if (store.get(KEYS.keep, true) === false) return;
+    const list = store.get(KEYS.recent, []);
+    list.unshift({ id: uid(), kind: item.kind, title: item.title, text: item.text, at: new Date().toISOString() });
+    store.set(KEYS.recent, list.slice(0, 10)); renderSaved();
+  }
+  let savedView = "saved";
+  function renderSaved() {
+    const box = $("#savedList"); box.textContent = "";
+    $$("#savedTabs .sub").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.view === savedView)));
+    $("#keepRecentRow").hidden = savedView !== "recent";
+    $("#keepRecent").checked = store.get(KEYS.keep, true) !== false;
+    const key = savedView === "saved" ? KEYS.saved : KEYS.recent;
+    const list = store.get(key, []);
+    $("#clearView").hidden = !list.length;
+    if (!list.length) {
+      box.append(h("p", { class: "empty" }, savedView === "saved" ? "Nothing saved yet. Press Save on any result and it will appear here." : "No recent results yet."));
+      return;
+    }
+    list.forEach((item) => {
+      const copyBtn = h("button", { type: "button", class: "small-btn", onclick: async () => flash(copyBtn, (await copyText(item.text)) ? "Copied" : "Press Ctrl+C") }, "Copy");
+      const btns = [copyBtn];
+      if (savedView === "recent") btns.push(h("button", { type: "button", class: "small-btn", onclick: () => addSaved(item) }, "Save"));
+      btns.push(h("button", { type: "button", class: "small-btn", onclick: () => {
+        store.set(key, store.get(key, []).filter((x) => x.id !== item.id)); updateSavedCount(); renderSaved();
+      } }, "Delete"));
+      box.append(h("details", { class: "note" },
+        h("summary", null, h("span", { class: "n-kind" }, KIND[item.kind] || "Note"), h("strong", null, item.title), " ", h("span", { class: "n-date" }, fmt(item.at))),
+        h("pre", { class: "n-text" }, item.text), h("div", { class: "btn-row" }, btns)));
+    });
+  }
+  $$("#savedTabs .sub").forEach((b) => b.addEventListener("click", () => { savedView = b.dataset.view; renderSaved(); }));
+  $("#keepRecent").addEventListener("change", (e) => store.set(KEYS.keep, e.target.checked));
+  $("#clearView").addEventListener("click", () => {
+    if (!confirm("Clear everything in this list?")) return;
+    store.del(savedView === "saved" ? KEYS.saved : KEYS.recent); updateSavedCount(); renderSaved();
+  });
+  function openDlg(id) { const d = document.getElementById(id); if (d.showModal) d.showModal(); else d.setAttribute("open", ""); }
+  $$("[data-close]").forEach((b) => b.addEventListener("click", () => document.getElementById(b.dataset.close).close()));
+  $$("dialog").forEach((d) => d.addEventListener("click", (e) => { if (e.target === d) d.close(); }));
+  const openSaved = () => { renderSaved(); openDlg("savedDlg"); };
+  $("#openSaved").addEventListener("click", openSaved); $("#footSaved").addEventListener("click", openSaved);
+  $("#openPrivacy").addEventListener("click", () => openDlg("privacyDlg")); $("#footPrivacy").addEventListener("click", () => openDlg("privacyDlg"));
+  $("#wipeAll").addEventListener("click", () => {
+    if (!confirm("Delete your to-do list, saved notes and recent results from this device?")) return;
+    Object.values(KEYS).forEach((k) => store.del(k));
+    tasks = []; renderTasks(); updateSavedCount(); renderSaved(); toast("Everything stored on this device has been deleted.");
+  });
+
+  /* ---------- result cards ---------- */
+  function resultCard(o) {
+    let restored = false;
+    const body = h("div", { class: "rc-body" });
+    const current = () => (restored && o.snap ? o.snap.restore(o.text) : o.text);
+    const paint = () => { body.textContent = ""; if (o.render) o.render(current(), body); else body.textContent = current(); };
+    const copyBtn = h("button", { type: "button", class: "small-btn", onclick: async () => flash(copyBtn, (await copyText(current())) ? "Copied" : "Press Ctrl+C") }, "Copy");
+    const btns = [copyBtn, h("button", { type: "button", class: "small-btn", onclick: () => addSaved({ kind: o.kind, title: o.saveTitle ? o.saveTitle + ": " + o.title : o.title, text: current() }) }, "Save")];
+    if (o.snap && o.snap.has) {
+      const nb = h("button", { type: "button", class: "small-btn", onclick: () => { restored = !restored; nb.textContent = restored ? "Hide names again" : "Put names back"; paint(); } }, "Put names back");
+      btns.push(nb);
+    }
+    const card = h("article", { class: "rcard" },
+      h("div", { class: "rc-head" }, h("h3", null, o.title), h("div", { class: "btn-row" }, btns)),
+      o.chips ? h("div", { class: "chips" }, o.chips.map((c) => h("span", { class: "chip" }, c))) : null,
+      body, o.share ? shareBar(current, o.title) : null);
+    paint();
+    return card;
+  }
+  function renderChecklist(text, body) {
+    let group = null;
+    text.split("\n").forEach((line) => {
+      const t = line.trim(); if (!t) return;
+      const m = t.match(/^(☐|□|\[\s?\]|[-•*])\s*(.*)$/);
+      if (m) {
+        if (!group) { group = h("div"); body.append(group); }
+        group.append(h("label", { class: "check" }, h("input", { type: "checkbox" }), h("span", null, m[2])));
+      } else {
+        group = null;
+        body.append(/:$/.test(t) ? h("h4", null, t.replace(/:$/, "")) : h("p", null, t));
+      }
+    });
+  }
+
+  /* =====================================================
+     TABS
+     ===================================================== */
+  const tabs = $$(".tab");
+  function moveIndicator() {
+    const a = $(".tab[aria-selected='true']"); const ind = $("#indicator");
+    if (!a) return;
+    ind.style.width = a.offsetWidth + "px"; ind.style.transform = "translateX(" + a.offsetLeft + "px)";
+  }
+  function activate(id, fromUser) {
+    if (!$("#panel-" + id)) id = "companion";
+    tabs.forEach((t) => t.setAttribute("aria-selected", String(t.dataset.tab === id)));
+    $$(".panel").forEach((p) => { p.hidden = p.id !== "panel-" + id; });
+    moveIndicator();
+    const a = $("#tab-" + id);
+    if (fromUser) {
+      try { history.replaceState(null, "", "#" + id); } catch (e) {}
+      window.scrollTo({ top: 0 });
+      if (a && a.scrollIntoView) a.scrollIntoView({ inline: "center", block: "nearest" });
+    }
+  }
+  tabs.forEach((t, i) => {
+    t.addEventListener("click", () => activate(t.dataset.tab, true));
+    t.addEventListener("keydown", (e) => {
+      let n = null;
+      if (e.key === "ArrowRight") n = (i + 1) % tabs.length;
+      if (e.key === "ArrowLeft") n = (i - 1 + tabs.length) % tabs.length;
+      if (n !== null) { e.preventDefault(); tabs[n].focus(); activate(tabs[n].dataset.tab, true); }
+    });
+  });
+  window.addEventListener("resize", moveIndicator);
+
+  /* =====================================================
+     1. COMPANION
+     ===================================================== */
+  const PRESETS = {
+    personal: [
+      { label: "Bad customer service", context: "Personal and family", channel: "Email", tone: "Polite and diplomatic",
+        text: "I had a poor experience with [business name] on [date]. What happened: [describe what went wrong]. What I would like them to do: [an apology, a refund, a replacement or an explanation]." },
+      { label: "Refund a product", context: "Personal and family", channel: "Email", tone: "Assertive",
+        text: "I bought [product] from [business name] on [date] (order or receipt number: [number]). The problem: [faulty, not as described, or changed my mind]. I would like a refund, please." },
+      { label: "General enquiry", context: "Personal and family", channel: "Email", tone: "Polite and diplomatic",
+        text: "I would like to find out about [topic or service] at [business or organisation]. What I need to know: [your questions]." },
+      { label: "Personal or family message", context: "Personal and family", channel: "Message", tone: "Polite and diplomatic",
+        text: "I want to message [name] about [subject]. What I want them to know: [main point]. How I would like it to feel: [warm, honest, clear about a boundary]." },
+      { label: "Cancel a booking or subscription", context: "Personal and family", channel: "Email", tone: "Concise",
+        text: "I need to cancel [booking or subscription] with [business], reference [number], from [date]. Please confirm the cancellation in writing and tell me whether any charges apply." }
+    ],
+    workplace: [
+      { label: "Phone call enquiry", context: "Workplace and professional", channel: "Phone call template", tone: "Polite and diplomatic",
+        text: "I need to phone [person or organisation] to ask about [subject]. What I need to find out: [questions]. What I want agreed by the end of the call: [outcome]." },
+      { label: "Deadline conflict", context: "Workplace and professional", channel: "Email", tone: "Polite and diplomatic",
+        text: "I have two deadlines that clash: [task 1] due [date] and [task 2] due [date]. I would like to [ask for an extension, agree which comes first, or get support]." },
+      { label: "Workload management issue", context: "Workplace and professional", channel: "Email", tone: "Assertive",
+        text: "My current workload is [describe: tasks, hours, projects]. I am concerned that [the effect on quality, deadlines or wellbeing]. I would like to talk about [reprioritising, extra support, or moving some work]." },
+      { label: "Ask for support or flexibility", context: "Workplace and professional", channel: "Email", tone: "Polite and diplomatic",
+        text: "I would like to ask for [flexible hours, a change of deadline, or extra support]. The reason: [what you are comfortable sharing]. What would help: [a specific arrangement]." },
+      { label: "Follow up with no reply", context: "Workplace and professional", channel: "Email", tone: "Concise",
+        text: "I contacted [name] on [date] about [subject] and haven't heard back. I would like [an update, a decision, or a reply] by [date]." }
+    ]
+  };
+  let cmpSet = "personal", cmpActive = null;
+  function renderPresets() {
+    $$("#cmpSubs .sub").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.set === cmpSet)));
+    const box = $("#cmpPresets"); box.textContent = "";
+    PRESETS[cmpSet].forEach((p) => {
+      box.append(h("button", { type: "button", class: "preset", "aria-pressed": String(cmpActive === p.label), onclick: () => {
+        cmpActive = p.label;
+        $("#cmpRequest").value = p.text; $("#cmpChannel").value = p.channel; $("#cmpContext").value = p.context; $("#cmpTone").value = p.tone;
+        renderPresets(); $("#cmpRequest").focus();
+      } }, p.label));
+    });
+  }
+  $$("#cmpSubs .sub").forEach((b) => b.addEventListener("click", () => { cmpSet = b.dataset.set; renderPresets(); }));
+  renderPresets();
+
+  const CHANNEL_RULES = {
+    "Email": "Format it as an email. Start with a line 'Subject: ...', then a blank line, a greeting, the body in short paragraphs, and a sign-off ending with [your name].",
+    "Message": "Format it as a text or chat message: no subject line, no formal sign-off, short natural sentences, and no more than three short paragraphs.",
+    "Letter": "Format it as a letter: [your address] and [date] at the top, a line for the recipient, a greeting, the body, and a sign-off ('Yours sincerely' if a name is known, otherwise 'Yours faithfully') followed by [your name].",
+    "Phone call template": "Format it as a short call script the person can read from: an opening line, the key points in the order to say them, one or two questions to ask, what to say if they reach voicemail, and a closing line. Put a label for each part on its own line."
+  };
+  const CONTEXT_RULES = {
+    "Personal and family": "Personal or family life. Use a warm, natural voice, first names and everyday language. No corporate wording.",
+    "Workplace and professional": "Work. Keep it professional, clear and respectful, with specific actions and dates where they are known.",
+    "Balanced": "A balance of friendly and professional: courteous, approachable and clear."
+  };
+  const TONE_RULES = {
+    "Assertive": "Assertive. State clearly what the person needs or expects. Direct, confident and respectful. No hedging, and no apologies unless the request asks for one. Never aggressive or rude.",
+    "Polite and diplomatic": "Polite and diplomatic. Courteous and tactful, soften difficult points, acknowledge the other person's side, and protect goodwill.",
+    "Formal": "Formal. Professional register, no contractions, no slang, precise wording.",
+    "Concise": "Concise. As short as possible while still complete: no filler and no repeated points. Aim for under 80 words (for a letter or call script, only the essentials)."
+  };
+
+  $("#cmpGo").addEventListener("click", () => withBusy($("#cmpGo"), $("#cmpErr"), async () => {
+    const rep = reps.cmp, snap = rep.snapshot();
+    const request = rep.apply($("#cmpRequest").value.trim());
+    const incoming = rep.apply($("#cmpMessage").value.trim());
+    if (!request && !incoming) throw new Error("Please describe what you need, or paste a message to reply to.");
+    const channel = $("#cmpChannel").value, context = $("#cmpContext").value, tone = $("#cmpTone").value;
+    const prompt = [
+      "Write 3 alternative drafts of the same communication.",
+      "",
+      "THE SETTINGS (all mandatory; every draft must follow all three):",
+      "1. Channel: " + channel + ". " + CHANNEL_RULES[channel],
+      "2. Context: " + context + ". " + CONTEXT_RULES[context],
+      "3. Tone: " + TONE_RULES[tone],
+      "",
+      request ? "THE PERSON'S REQUEST (every draft must cover it fully and accurately):\n" + request
+              : "THE PERSON'S REQUEST: none given, so write a sensible, courteous reply to the message below.",
+      incoming ? "\nTHE MESSAGE BEING REPLIED TO (every draft must reply directly to it and deal with what it asks or says):\n" + incoming : "",
+      "",
+      "HOW THE DRAFTS DIFFER: only in approach or emphasis (for example most direct, warmest, shortest). Never in the settings, the facts, or what is being asked for.",
+      "BEFORE YOU ANSWER: check each draft against the channel, context, tone and request, and correct anything that does not match.",
+      "OUTPUT: put the line " + DELIM + " before each draft, with nothing before the first one. Output only the drafts.",
+      "",
+      HOUSE_RULES
+    ].join("\n");
+    const text = await askAI(prompt);
+    let opts = splitOptions(text);
+    const out = $("#cmpOut"); out.textContent = "";
+    const chips = [channel, context, tone];
+    if (opts.length < 2) opts = [text];
+    opts.slice(0, 3).forEach((o, i) => out.append(resultCard({
+      title: opts.length === 1 ? "Your draft" : "Option " + (i + 1), text: o, snap, kind: "companion", chips,
+      saveTitle: "Companion draft"
+    })));
+    addRecent({ kind: "companion", title: "Companion drafts (" + channel + ")", text: opts.slice(0, 3).map((o, i) => "Option " + (i + 1) + "\n" + o).join("\n\n") });
+    out.scrollIntoView({ behavior: "smooth", block: "start" });
+  }));
+  $("#cmpClear").addEventListener("click", () => {
+    $("#cmpRequest").value = ""; $("#cmpMessage").value = ""; $("#cmpOut").textContent = ""; $("#cmpErr").textContent = "";
+    cmpActive = null; renderPresets();
+  });
+
+  /* =====================================================
+     2. PRIORITIES
+     ===================================================== */
+  const PRI = { high: 0, mid: 1, low: 2 };
+  const PRI_LABEL = { high: "High", mid: "Mid", low: "Low" };
+  const TYPE_LABEL = { email: "Email", message: "Message", event: "Calendar event", task: "Task", general: "General" };
+  let tasks = store.get(KEYS.tasks, []);
+  function sortTasks(list) {
+    return list.slice().sort((a, b) => (a.done - b.done) || (PRI[a.priority] - PRI[b.priority]) ||
+      ((a.deadline ? new Date(a.deadline).getTime() : Infinity) - (b.deadline ? new Date(b.deadline).getTime() : Infinity)));
+  }
+  function saveTasks() { store.set(KEYS.tasks, tasks); renderTasks(); }
+
+  const pad = (n) => String(n).padStart(2, "0");
+  const utc = (d) => d.getUTCFullYear() + pad(d.getUTCMonth() + 1) + pad(d.getUTCDate()) + "T" + pad(d.getUTCHours()) + pad(d.getUTCMinutes()) + pad(d.getUTCSeconds()) + "Z";
+  function gcalUrl(t) {
+    const s = new Date(t.deadline), e = new Date(s.getTime() + 30 * 60000);
+    return "https://calendar.google.com/calendar/render?action=TEMPLATE&text=" + encodeURIComponent(t.title) +
+      "&dates=" + utc(s) + "/" + utc(e) + "&details=" + encodeURIComponent(PRI_LABEL[t.priority] + " priority " + TYPE_LABEL[t.type].toLowerCase() + ". Added from UnburdenMe.");
+  }
+  const icsEsc = (s) => s.replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\n/g, "\\n");
+  function icsEvent(t) {
+    const s = new Date(t.deadline), e = new Date(s.getTime() + 30 * 60000);
+    const lines = ["BEGIN:VEVENT", "UID:" + t.id + "@unburdenme.co.uk", "DTSTAMP:" + utc(new Date()), "DTSTART:" + utc(s), "DTEND:" + utc(e),
+      "SUMMARY:" + icsEsc(t.title), "DESCRIPTION:" + icsEsc(PRI_LABEL[t.priority] + " priority " + TYPE_LABEL[t.type].toLowerCase() + ". Added from UnburdenMe.")];
+    if (t.reminder) {
+      const mins = Math.round((s.getTime() - new Date(t.reminder).getTime()) / 60000);
+      if (mins > 0) lines.push("BEGIN:VALARM", "ACTION:DISPLAY", "DESCRIPTION:" + icsEsc(t.title), "TRIGGER:-PT" + mins + "M", "END:VALARM");
+    }
+    lines.push("END:VEVENT"); return lines;
+  }
+  function downloadIcs(list, name) {
+    const body = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//UnburdenMe//EN"].concat(...list.map(icsEvent), ["END:VCALENDAR"]).join("\r\n");
+    download(name + ".ics", body, "text/calendar");
+  }
+
+  function renderTasks() {
+    const list = $("#taskList"); list.textContent = "";
+    const open = tasks.filter((t) => !t.done);
+    const count = (p) => open.filter((t) => t.priority === p).length;
+    const gb = $("#gaugeBox"); gb.textContent = "";
+    if (!tasks.length) {
+      gb.append(h("p", { class: "empty" }, "Nothing here yet. Add your first item above."));
+    } else {
+      if (open.length) {
+        gb.append(h("div", { class: "gauge", role: "img", "aria-label": "Open items by priority" },
+          ["high", "mid", "low"].map((p) => count(p) ? h("span", { class: "g-" + p, style: "flex:" + count(p) }) : null)));
+      }
+      gb.append(h("p", { class: "gauge-text" }, open.length
+        ? open.length + " open: " + count("high") + " high, " + count("mid") + " mid, " + count("low") + " low"
+        : "All done. Nice work."));
+    }
+    sortTasks(tasks).forEach((t) => {
+      const overdue = t.deadline && !t.done && new Date(t.deadline).getTime() < Date.now();
+      const actions = [];
+      if (t.deadline) {
+        actions.push(h("button", { type: "button", class: "chip-btn", onclick: () => window.open(gcalUrl(t), "_blank", "noopener") }, "Google Calendar"));
+        actions.push(h("button", { type: "button", class: "chip-btn", onclick: () => downloadIcs([t], slug(t.title)) }, "Other calendars"));
+      }
+      actions.push(h("button", { type: "button", class: "chip-btn", "aria-label": "Delete " + t.title, onclick: () => { tasks = tasks.filter((x) => x.id !== t.id); saveTasks(); } }, "Delete"));
+      const cb = h("input", { type: "checkbox", "aria-label": "Mark as done: " + t.title, onchange: (e) => { t.done = e.target.checked; saveTasks(); } });
+      if (t.done) cb.checked = true;
+      list.append(h("li", { class: "task" + (t.done ? " done" : "") }, cb,
+        h("div", null, h("div", { class: "t-title" }, t.title),
+          h("div", { class: "t-meta" },
+            h("span", { class: "badge b-" + t.priority }, PRI_LABEL[t.priority] + " priority"),
+            h("span", { class: "badge" }, TYPE_LABEL[t.type]),
+            t.deadline ? h("span", { class: overdue ? "overdue" : "" }, (overdue ? "Overdue: " : "Due ") + fmt(t.deadline)) : null,
+            t.reminder ? h("span", null, "Reminder " + fmt(t.reminder)) : null)),
+        h("div", { class: "t-actions" }, actions)));
+    });
+    $("#listActions").hidden = !tasks.length;
+    $("#allIcs").hidden = !tasks.some((t) => t.deadline && !t.done);
+    $("#clearDone").hidden = !tasks.some((t) => t.done);
+  }
+  $("#taskForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const title = $("#tTitle").value.trim(), err = $("#taskErr"); err.textContent = "";
+    if (!title) { err.textContent = "Please say what the item is."; $("#tTitle").focus(); return; }
+    const deadline = $("#tDeadline").value, reminder = $("#tReminder").value;
+    if (deadline && reminder && new Date(reminder) > new Date(deadline)) { err.textContent = "The reminder is after the deadline. Please choose an earlier time."; return; }
+    tasks.push({ id: uid(), title, priority: $("#tPriority").value, type: $("#tType").value, deadline, reminder, done: false, notified: false });
+    if (reminder && "Notification" in window && Notification.permission === "default") { try { Notification.requestPermission(); } catch (x) {} }
+    saveTasks();
+    $("#tTitle").value = ""; $("#tDeadline").value = ""; $("#tReminder").value = ""; $("#tTitle").focus();
+  });
+  $("#clearDone").addEventListener("click", () => { tasks = tasks.filter((t) => !t.done); saveTasks(); });
+  $("#allIcs").addEventListener("click", () => downloadIcs(tasks.filter((t) => t.deadline && !t.done), "unburdenme-deadlines"));
+
+  function showReminder(t) {
+    const box = h("div", { class: "alert" }, h("strong", null, "Reminder:"), " " + t.title + (t.deadline ? " (due " + fmt(t.deadline) + ")" : ""),
+      h("button", { type: "button", class: "icon-btn", "aria-label": "Dismiss reminder", onclick: () => box.remove() }, "×"));
+    $("#alerts").append(box);
+    if ("Notification" in window && Notification.permission === "granted") { try { new Notification("UnburdenMe reminder", { body: t.title, icon: "icon-192x192.png" }); } catch (e) {} }
+  }
+  function checkReminders() {
+    const now = Date.now(); let changed = false;
+    tasks.forEach((t) => {
+      if (t.reminder && !t.done && !t.notified && new Date(t.reminder).getTime() <= now) { t.notified = true; changed = true; showReminder(t); }
+    });
+    if (changed) saveTasks();
+  }
+  setInterval(checkReminders, 15000);
+
+  $("#priGo").addEventListener("click", () => withBusy($("#priGo"), $("#priErr"), async () => {
+    const open = sortTasks(tasks.filter((t) => !t.done));
+    if (!open.length) throw new Error("Add at least one open item first.");
+    const rep = reps.pri, snap = rep.snapshot();
+    const lines = open.map((t) => "- [" + PRI_LABEL[t.priority] + " priority] " + TYPE_LABEL[t.type] + ": " + rep.apply(t.title) + (t.deadline ? " (due " + fmt(t.deadline) + ")" : ""));
+    const prompt = [
+      "Help the person get on top of their workload. Today is " + new Date().toLocaleString("en-GB", { dateStyle: "full", timeStyle: "short" }) + ".",
+      "THEIR OPEN ITEMS (already marked by them as high, mid or low priority):",
+      lines.join("\n"),
+      "",
+      "WRITE THESE SECTIONS, each heading on its own line ending with a colon:",
+      "Where to start: the one to three things to deal with first, and why, using their priorities and deadlines.",
+      "Suggested order: the remaining items in a sensible order, with a short reason where it isn't obvious.",
+      "Making it manageable: for each high priority item, one or two practical ideas that fit that specific item (for example breaking it into smaller steps, setting aside a block of time, asking for an extension, or asking someone for help).",
+      "Your to-do list: every open item, in the suggested order, one per line starting with '☐ ', with its deadline if it has one.",
+      "",
+      "RULES: Refer only to the items listed and never add tasks of your own. Keep the high priority items first. Be calm, encouraging and realistic, without pressure. Keep it short enough to read in a minute or two.",
+      "",
+      HOUSE_RULES
+    ].join("\n");
+    const text = await askAI(prompt);
+    const out = $("#priOut"); out.textContent = "";
+    out.append(resultCard({ title: "Your priority summary", text, snap, kind: "priorities", share: true, render: renderChecklist }));
+    addRecent({ kind: "priorities", title: "Priority summary", text });
+    out.scrollIntoView({ behavior: "smooth", block: "start" });
+  }));
+
+  /* =====================================================
+     3. MICRO SUMMARY
+     ===================================================== */
+  const FORMATS = {
+    bullets: { name: "Bullet points", desc: "The 3 to 5 key points as bullets, followed by short lists of any actions, decisions and deadlines.",
+      rule: "Start with 3 to 5 bullet points, each beginning '• '. Then, only where the text contains them, add short bullet lists headed 'Actions:', 'Decisions:' and 'Deadlines:'." },
+    paragraph: { name: "Written paragraph", desc: "One short paragraph that covers the main points, including any actions, decisions and deadlines.",
+      rule: "Write one clear paragraph (two at most) of plain prose with no bullets. It must cover the 3 to 5 main points and mention any actions, decisions and deadlines that are in the text." },
+    checklist: { name: "Checklist", desc: "A tick-box list of what needs doing, what needs deciding and what's due.",
+      rule: "Start with a one-sentence summary. Then write a checklist where every line begins '☐ ': first the actions (say who and by when where the text does), then any decisions still to be made or confirmed, then deadlines. Keep to the points that matter most." },
+    digest: { name: "Summary digest", desc: "A structured overview: summary, actions, decisions and deadlines under clear headings.",
+      rule: "Write a structured overview with these headings, each on its own line ending with a colon: 'Summary:' (3 to 5 bullet points beginning '• '), 'Actions:', 'Decisions:' and 'Deadlines:'. Under each of the last three use bullets beginning '• ', or write 'None mentioned.'" }
+  };
+  let fmtKey = "bullets";
+  function renderFormats() {
+    $$("#sumFormats .sub").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.fmt === fmtKey)));
+    $("#fmtDesc").textContent = FORMATS[fmtKey].desc;
+  }
+  $$("#sumFormats .sub").forEach((b) => b.addEventListener("click", () => { fmtKey = b.dataset.fmt; renderFormats(); }));
+  renderFormats();
+
+  function updateCount() {
+    const n = $("#sumText").value.length;
+    $("#sumCount").textContent = n ? n.toLocaleString("en-GB") + " characters" + (n > MAX_CHARS ? ". That's over the limit of " + MAX_CHARS.toLocaleString("en-GB") + ", so only the first part will be summarised." : "") : "";
+  }
+  $("#sumText").addEventListener("input", updateCount);
+
+  function loadScript(src) {
+    return new Promise((res, rej) => {
+      if ($$("script").some((s) => s.src === src)) return res();
+      const s = h("script", { src }); s.onload = res; s.onerror = () => rej(new Error("Couldn't load the file reader. Please paste the text instead."));
+      document.head.append(s);
+    });
+  }
+  async function readFile(file) {
+    const name = file.name.toLowerCase();
+    if (file.size > 8 * 1024 * 1024) throw new Error("That file is over 8 MB. Please use a smaller one or paste the text.");
+    if (/\.(txt|md|csv|json)$/.test(name) || file.type.indexOf("text/") === 0) return await file.text();
+    if (name.endsWith(".docx")) {
+      await loadScript("https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js");
+      const r = await window.mammoth.extractRawText({ arrayBuffer: await file.arrayBuffer() });
+      return r.value;
+    }
+    if (name.endsWith(".pdf")) {
+      await loadScript("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js");
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+      const pdf = await window.pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
+      let out = "";
+      for (let i = 1; i <= Math.min(pdf.numPages, 100); i++) {
+        const page = await pdf.getPage(i); const c = await page.getTextContent();
+        out += c.items.map((x) => x.str).join(" ") + "\n\n";
+      }
+      if (out.trim().length < 40) throw new Error("That PDF looks like a scan or image, so there's no text to read. Please paste the text instead.");
+      return out;
+    }
+    throw new Error("That file type isn't supported. Use .txt, .md, .csv, .docx or a text-based PDF, or paste the text.");
+  }
+  $("#sumFile").addEventListener("change", async (e) => {
+    const f = e.target.files[0]; if (!f) return;
+    const err = $("#sumErr"); err.textContent = "";
+    try {
+      const text = await readFile(f);
+      $("#sumText").value = text.trim(); updateCount(); toast("File added. Check the text, then press Summarise.");
+    } catch (x) { err.textContent = x.message || "Couldn't read that file. Please paste the text instead."; e.target.value = ""; }
+  });
+  $("#sumApply").addEventListener("click", () => {
+    const ta = $("#sumText"); if (!ta.value.trim()) return;
+    ta.value = reps.sum.apply(ta.value); updateCount(); toast("Replacements applied.");
+  });
+  $("#sumGo").addEventListener("click", () => withBusy($("#sumGo"), $("#sumErr"), async () => {
+    let raw = $("#sumText").value.trim();
+    if (!raw) throw new Error("Please paste some text or attach a file first.");
+    const rep = reps.sum, snap = rep.snapshot();
+    let text = rep.apply(raw), note = "";
+    if (text.length > MAX_CHARS) { text = text.slice(0, MAX_CHARS); note = "\n\n(Only the first part of a long text was summarised.)"; }
+    const f = FORMATS[fmtKey];
+    const prompt = [
+      "Summarise the text below for a busy person.",
+      "OUTPUT FORMAT (mandatory): " + f.rule,
+      "RULES: Pick out the 3 to 5 points that matter most. Include actions (who needs to do what), decisions made and deadlines wherever the text mentions them. If the text has none of these, leave them out and do not make anything up. Use only what is in the text. Keep names, numbers and dates exactly as written.",
+      "",
+      "THE TEXT:",
+      "\"\"\"", text, "\"\"\"",
+      "",
+      HOUSE_RULES
+    ].join("\n");
+    const result = (await askAI(prompt)) + note;
+    const out = $("#sumOut"); out.textContent = "";
+    out.append(resultCard({ title: "Summary: " + f.name.toLowerCase(), text: result, snap, kind: "summary", share: true, chips: [f.name],
+      render: fmtKey === "checklist" ? renderChecklist : null }));
+    addRecent({ kind: "summary", title: "Summary (" + f.name.toLowerCase() + ")", text: result });
+    out.scrollIntoView({ behavior: "smooth", block: "start" });
+  }));
+  $("#sumClear").addEventListener("click", () => {
+    $("#sumText").value = ""; $("#sumFile").value = ""; $("#sumOut").textContent = ""; $("#sumErr").textContent = ""; updateCount();
+  });
+
+  /* =====================================================
+     4. PROBLEM SOLVER
+     ===================================================== */
+  $("#solGo").addEventListener("click", () => withBusy($("#solGo"), $("#solErr"), async () => {
+    const rep = reps.sol, snap = rep.snapshot();
+    const scenario = rep.apply($("#solText").value.trim());
+    if (!scenario) throw new Error("Please describe the challenge first.");
+    const prompt = [
+      "Help the person work out what to do about their situation.",
+      "",
+      "THEIR SITUATION:",
+      scenario,
+      "",
+      "WRITE 3 GENUINELY DIFFERENT WAYS FORWARD. Each must be realistic for this situation and must rely on the details given, not on generic advice.",
+      "FIRST, one line beginning 'Assumptions:' with one or two short sentences on anything you had to assume because it wasn't said (or 'Assumptions: None.').",
+      "THEN, put the line " + DELIM + " before each of the three options. Use exactly this layout for each, with these labels on their own lines:",
+      "A short plain-English name for the approach",
+      "What this involves: one or two sentences",
+      "Pros:",
+      "• two to four points",
+      "Cons:",
+      "• two to four points",
+      "Action steps:",
+      "1. three to six clear, specific steps, in order",
+      "",
+      "RULES: Keep every option faithful to the situation described. If it touches on health, legal or money matters, keep to general information and say where a professional would help. If the person seems to be in distress, be kind and gently suggest they speak to someone they trust.",
+      "",
+      HOUSE_RULES
+    ].join("\n");
+    const text = await askAI(prompt);
+    const parts = splitOptions(text);
+    const out = $("#solOut"); out.textContent = "";
+    let opts = parts;
+    if (parts.length >= 4 || (parts.length > 1 && /^assumptions:/i.test(parts[0]))) {
+      out.append(h("div", { class: "assume" }, parts[0]));
+      opts = parts.slice(1);
+    }
+    opts.slice(0, 3).forEach((o, i) => out.append(resultCard({ title: opts.length === 1 ? "Your result" : "Solution " + (i + 1), text: o, snap, kind: "solver", saveTitle: "Solution" })));
+    addRecent({ kind: "solver", title: "Problem Solver options", text: opts.slice(0, 3).map((o, i) => "Solution " + (i + 1) + "\n" + o).join("\n\n") });
+    out.scrollIntoView({ behavior: "smooth", block: "start" });
+  }));
+  $("#solClear").addEventListener("click", () => { $("#solText").value = ""; $("#solOut").textContent = ""; $("#solErr").textContent = ""; });
+
+  /* =====================================================
+     5. PREP
+     ===================================================== */
+  const PREP_PRESETS = [
+    { label: "Job interview", what: "A job interview for [role] at [company] on [date]", cat: "A job" },
+    { label: "Medical visit", what: "A medical appointment with [doctor or service] on [date] about [reason you are comfortable sharing]", cat: "Meeting or discussion" },
+    { label: "Performance review", what: "My performance review with [manager's name] on [date]", cat: "A job" },
+    { label: "Family event", what: "A family event: [occasion] on [date] at [place]", cat: "A social event" }
+  ];
+  PREP_PRESETS.forEach((p) => {
+    $("#prepPresets").append(h("button", { type: "button", class: "preset", onclick: () => {
+      $("#prepWhat").value = p.what; $("#prepCat").value = p.cat; $("#prepWhat").focus();
+    } }, p.label));
+  });
+  $("#prepGo").addEventListener("click", () => withBusy($("#prepGo"), $("#prepErr"), async () => {
+    const rep = reps.prep, snap = rep.snapshot();
+    const what = rep.apply($("#prepWhat").value.trim()), notes = rep.apply($("#prepNotes").value.trim()), cat = $("#prepCat").value;
+    if (!what) throw new Error("Please say what you're preparing for, or choose one of the quick options.");
+    const prompt = [
+      "Create a practical preparation checklist.",
+      "WHAT THEY ARE PREPARING FOR: " + what,
+      "CATEGORY: " + cat,
+      notes ? "THEIR PERSONAL CONTEXT AND NOTES (reflect every relevant detail in the checklist):\n" + notes : "THEIR NOTES: none given.",
+      "",
+      "FORMAT: group the items under short headings, each on its own line ending with a colon (choose headings that fit, such as 'Before the day:', 'What to bring:', 'On the day:', 'Things to say or ask:', 'Afterwards:'). Every item starts with '☐ ' and is one clear, specific action. Aim for 8 to 15 items in total.",
+      "RULES: Make it specific to this event and this person, not generic. Keep it realistic and calm. If the event is a medical visit, help them get organised (what to bring, questions to ask, notes to take) and do not give medical advice or try to diagnose.",
+      "",
+      HOUSE_RULES
+    ].join("\n");
+    const text = await askAI(prompt);
+    const out = $("#prepOut"); out.textContent = "";
+    out.append(resultCard({ title: "Your prep checklist", text, snap, kind: "prep", share: true, chips: [cat], render: renderChecklist }));
+    addRecent({ kind: "prep", title: "Prep checklist", text });
+    out.scrollIntoView({ behavior: "smooth", block: "start" });
+  }));
+  $("#prepClear").addEventListener("click", () => { $("#prepWhat").value = ""; $("#prepNotes").value = ""; $("#prepOut").textContent = ""; $("#prepErr").textContent = ""; });
+
+  /* =====================================================
+     START
+     ===================================================== */
+  renderTasks(); updateSavedCount(); renderSaved();
+  activate((location.hash || "").slice(1) || "companion", false);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(moveIndicator);
+  window.addEventListener("load", moveIndicator);
+  window.addEventListener("hashchange", () => activate((location.hash || "").slice(1) || "companion", false));
+  checkReminders();
+})();
+</script>
+</body>
+</html>
