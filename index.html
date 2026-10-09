@@ -92,7 +92,7 @@
   .error { color: var(--danger); min-height: 1.3em; margin-top: 10px; font-size: .95rem; }
   .notice { font-size: .88rem; color: var(--muted); margin-top: 10px; }
   .empty { color: var(--muted); }
-  .welcome { font-family: var(--display); font-weight: 600; color: var(--sage); background: var(--sage-soft); border-radius: var(--radius); padding: 12px 18px; margin: 0 0 18px; }
+  .panel-head .welcome { font-family: var(--display); font-weight: 600; color: var(--sage); background: var(--sage-soft); border-radius: var(--radius); padding: 12px 18px; margin: 0 0 18px; }
 
   /* Sub tabs and chips */
   .subtabs { display: inline-flex; gap: 4px; padding: 4px; background: var(--bg); border: 1.5px solid var(--line); border-radius: 999px; margin-bottom: 14px; }
@@ -202,7 +202,7 @@
   <div class="tabbar" id="tabbar" role="tablist" aria-label="UnburdenMe tools">
     <span class="indicator" id="indicator" aria-hidden="true"></span>
     <button class="tab" role="tab" id="tab-companion" data-tab="companion" aria-selected="true" aria-controls="panel-companion">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h11a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H9l-4 3v-3H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/><path d="M19 9h1a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2v2l-3-2h-4a2 2 0 0 1-2-2"/></svg>Write</button>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h11a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H9l-4 3v-3H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/><path d="M19 9h1a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2v2l-3-2h-4a2 2 0 0 1-2-2"/></svg>Companion</button>
     <button class="tab" role="tab" id="tab-priorities" data-tab="priorities" aria-selected="false" aria-controls="panel-priorities">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 6h11M10 12h11M10 18h11"/><path d="M3 6l1.5 1.5L7 5M3 12l1.5 1.5L7 11M3 18l1.5 1.5L7 17"/></svg>Prioritise</button>
     <button class="tab" role="tab" id="tab-summary" data-tab="summary" aria-selected="false" aria-controls="panel-summary">
@@ -220,7 +220,7 @@
   <section class="panel" id="panel-companion" role="tabpanel" aria-labelledby="tab-companion">
     <div class="panel-head">
       <p class="welcome">A calm place to manage your workload and find the right words. Free, no account, nothing stored on our side.</p>
-      <h1>Write</h1>
+      <h1>Companion</h1>
       <p>Find the right words for an email, message, letter or phone call, or draft a reply to one you've received.</p>
     </div>
 
@@ -287,12 +287,21 @@
       </form>
     </div>
 
-<h2>Your list</h2>
+<div class="card">
+      <h2>Your list</h2>
       <div class="subtabs" id="listViews" role="group" aria-label="List view">
         <button class="sub" type="button" data-view="top3" aria-pressed="true">Today's top 3</button>
         <button class="sub" type="button" data-view="all" aria-pressed="false">Everything</button>
       </div>
-      <p class="notice" id="viewNote"></p>
+<p class="notice" id="viewNote"></p>
+      <div id="gaugeBox"></div>
+      <ul class="tasks" id="taskList"></ul>
+      <div class="actions" id="listActions" hidden>
+        <button class="ghost" id="allIcs" type="button">Add all deadlines to my calendar</button>
+        <button class="ghost" id="clearDone" type="button">Remove completed</button>
+      </div>
+      <p class="notice">Your list is saved in this browser on this device only.</p>
+    </div>
 
     <div class="card">
       <h2>Priority summary</h2>
@@ -418,7 +427,7 @@
     <p><em>Last updated: October 2026</em></p>
 
     <h3>Who we are</h3>
-    <p>UnburdenMe (unburdenme.co.uk) is run by <span class="ph">UnburdenMe</span>. If you have any questions about this notice or your information, contact us at <span class="ph">UnburdenMe.co.uk@gmail.com</span>.</p>
+    <p>UnburdenMe (unburdenme.co.uk) is run by <span class="ph">UnburdenMe</span>. If you have any questions about this notice or your information, contact us at <span class="ph">hello@UnburdenMe.co.uk</span>.</p>
 
     <h3>What this site does with what you type</h3>
     <p>When you press a button such as Unburden Me, Summarise or Create priority summary, the text you've entered is sent to a small service we run, and from there to Google's Gemini AI service, which writes the reply. We don't keep a copy of what you send or what comes back. We don't ask you to create an account, and we don't ask for your name or email address.</p>
@@ -696,10 +705,61 @@
       const nb = h("button", { type: "button", class: "small-btn", onclick: () => { restored = !restored; nb.textContent = restored ? "Hide names again" : "Put names back"; paint(); } }, "Put names back");
       btns.push(nb);
     }
+/* Refine buttons: change this result without starting over */
+    const REFINE = {
+      "Shorter": "Make it noticeably shorter. Cut filler and repeated points, but keep every fact, request and deadline.",
+      "More direct": "Make it more direct: say what is needed plainly and early, firm but still polite, with no hedging.",
+      "More supportive": "Make it warmer and more supportive and understanding, without changing what is being asked or any facts.",
+      "Summarise": "Summarise it in 3 to 5 short points, each beginning '• '."
+    };
+    const refineNames = o.kind === "companion" ? ["Shorter", "More direct", "More supportive", "Turn into tasks"] : ["Shorter", "Summarise", "Turn into tasks"];
+    const history = [];
+    let busy = false;
+    const refineBar = h("div", { class: "sharebar" }, h("span", { class: "share-label" }, "Refine:"));
+    const refineErr = h("div", { class: "error", role: "alert" });
+    const tasksBox = h("div", { class: "assume", hidden: true });
+    const undoBtn = h("button", { type: "button", class: "chip-btn", hidden: true, onclick: () => {
+      if (!history.length) return;
+      o.text = history.pop(); paint(); undoBtn.hidden = !history.length;
+    } }, "Undo");
+    function refineWith(btn, name) {
+      if (busy) return;
+      busy = true; tasksBox.hidden = true;
+      return withBusy(btn, refineErr, async () => {
+        const prompt = [
+          name === "Turn into tasks"
+            ? "Pick out the specific actions in the text below as a short to-do list: 2 to 8 items, one per line, each starting with '☐ ', each under 90 characters, mentioning a deadline in the line if the text gives one. Do not invent items. Output only the list."
+            : "Rewrite the text below. " + REFINE[name] + " Keep every fact, name, date and placeholder (such as XXX or [date]) exactly as written, and keep the same layout and line breaks. Output only the rewritten text.",
+          "", "THE TEXT:", '"""', o.text, '"""', "", HOUSE_RULES
+        ].join("\n");
+        const result = await askAI(prompt);
+        if (name !== "Turn into tasks") { history.push(o.text); undoBtn.hidden = false; o.text = result; paint(); return; }
+        const items = result.split("\n").map((l) => l.replace(/^\s*(☐|□|[-•*])\s*/, "").trim()).filter(Boolean).slice(0, 8);
+        if (!items.length) throw new Error("Couldn't find any clear actions in that text.");
+        tasksBox.textContent = "";
+        tasksBox.append(h("p", null, "Tick the ones to add to your Prioritise list:"));
+        const boxes = items.map((t) => {
+          const cb = h("input", { type: "checkbox" }); cb.checked = true;
+          tasksBox.append(h("label", { style: "display:flex;gap:10px;margin:0 0 6px;font-weight:400" }, cb, h("span", null, t)));
+          return cb;
+        });
+        tasksBox.append(h("div", { class: "btn-row" },
+          h("button", { type: "button", class: "small-btn", onclick: () => {
+            const chosen = items.filter((t, i) => boxes[i].checked).map((t) => (o.snap ? o.snap.restore(t) : t));
+            chosen.forEach((t) => tasks.push({ id: uid(), title: t, priority: "mid", type: "task", deadline: "", reminder: "", done: false, notified: false }));
+            if (chosen.length) { saveTasks(); toast("Added " + chosen.length + " to Prioritise"); }
+            tasksBox.hidden = true;
+          } }, "Add to my list"),
+          h("button", { type: "button", class: "small-btn", onclick: () => { tasksBox.hidden = true; } }, "Cancel")));
+        tasksBox.hidden = false;
+      }).finally(() => { busy = false; });
+    }
+    refineNames.forEach((n) => refineBar.append(h("button", { type: "button", class: "chip-btn", onclick: (e) => refineWith(e.currentTarget, n) }, n)));
+    refineBar.append(undoBtn);
     const card = h("article", { class: "rcard" },
       h("div", { class: "rc-head" }, h("h3", null, o.title), h("div", { class: "btn-row" }, btns)),
       o.chips ? h("div", { class: "chips" }, o.chips.map((c) => h("span", { class: "chip" }, c))) : null,
-      body, o.share ? shareBar(current, o.title) : null);
+body, refineBar, refineErr, tasksBox, o.share ? shareBar(current, o.title) : null);
     paint();
     return card;
   }
@@ -848,6 +908,78 @@
     addRecent({ kind: "companion", title: "Companion drafts (" + channel + ")", text: opts.slice(0, 3).map((o, i) => "Option " + (i + 1) + "\n" + o).join("\n\n") });
     out.scrollIntoView({ behavior: "smooth", block: "start" });
   }));
+/* Guided flow: a few quick questions instead of a blank box */
+  const GUIDE = {
+    topic: ["Too much on my plate", "A deadline clash", "I need support or flexibility", "Saying no to something", "Following up with no reply", "A complaint or refund"],
+    who: [["My manager", "Workplace and professional"], ["A colleague or team", "Workplace and professional"], ["A client or customer", "Workplace and professional"], ["A business or organisation", "Balanced"], ["A friend or family member", "Personal and family"]],
+    goal: ["More time", "Some help or support", "To agree priorities", "A decision or answer", "A refund or fix", "To say no politely"],
+    tone: ["Polite and diplomatic", "Assertive", "Formal", "Concise"],
+    channel: ["Email", "Message", "Letter", "Phone call template"]
+  };
+  const GUIDE_TITLES = ["What's it about?", "Who is it for?", "What would you like to happen?", "Anything it should include?", "How should it sound?"];
+  const g = { step: 0, topic: "", who: "", context: "Balanced", goal: "", details: "", tone: "Polite and diplomatic", channel: "Email" };
+
+  const presetsCard = $("#cmpPresets").closest(".card"), requestCard = $("#cmpRequest").closest(".card");
+  const gBody = h("div", { "aria-live": "polite" }), gErr = h("div", { class: "error", role: "alert" });
+  const gGo = h("button", { type: "button", class: "go" }, "Write it");
+  const guideCard = h("div", { class: "card" }, h("h2", null, "A few quick questions"), gBody, gErr);
+
+  function guideChips(options, current, onPick) {
+    return h("div", { class: "presets" }, options.map((o) => {
+      const label = Array.isArray(o) ? o[0] : o;
+      return h("button", { type: "button", class: "preset", "aria-pressed": String(current === label), onclick: () => onPick(o) }, label);
+    }));
+  }
+  function renderGuide() {
+    gBody.textContent = "";
+    gBody.append(h("p", { class: "notice" }, "Question " + (g.step + 1) + " of 5"), h("h3", { style: "margin:6px 0 12px" }, GUIDE_TITLES[g.step]));
+    const next = () => { g.step++; renderGuide(); };
+    if (g.step === 0) gBody.append(guideChips(GUIDE.topic, g.topic, (v) => { g.topic = v; next(); }));
+    if (g.step === 1) gBody.append(guideChips(GUIDE.who, g.who, (v) => { g.who = v[0]; g.context = v[1]; next(); }));
+    if (g.step === 2) gBody.append(guideChips(GUIDE.goal, g.goal, (v) => { g.goal = v; next(); }));
+    if (g.step === 3) {
+      const d = h("input", { type: "text", "aria-label": "Details to include", placeholder: "e.g. report due Friday; I'm also covering for Sam" });
+      d.value = g.details; d.addEventListener("input", () => { g.details = d.value; });
+      const m = h("textarea", { "aria-label": "Message you are replying to", style: "min-height:90px", placeholder: "Replying to a message? Paste it here (optional)" });
+      m.value = $("#cmpMessage").value; m.addEventListener("input", () => { $("#cmpMessage").value = m.value; });
+      gBody.append(d, h("div", { style: "height:10px" }), m);
+    }
+    if (g.step === 4) {
+      gBody.append(h("p", { class: "hint-line" }, "Tone"), guideChips(GUIDE.tone, g.tone, (v) => { g.tone = v; renderGuide(); }),
+        h("p", { class: "hint-line", style: "margin-top:14px" }, "How will you send it?"), guideChips(GUIDE.channel, g.channel, (v) => { g.channel = v; renderGuide(); }));
+    }
+    const row = h("div", { class: "actions" });
+    if (g.step > 0) row.append(h("button", { type: "button", class: "ghost", onclick: () => { g.step--; renderGuide(); } }, "Back"));
+    if (g.step === 3) row.append(h("button", { type: "button", class: "go", onclick: next }, "Next"));
+    if (g.step === 4) {
+      row.append(gGo, h("button", { type: "button", class: "ghost", onclick: () => { Object.assign(g, { step: 0, topic: "", who: "", goal: "", details: "" }); renderGuide(); } }, "Start again"));
+    }
+    gBody.append(row);
+  }
+  gGo.addEventListener("click", () => {
+    gErr.textContent = "";
+    const details = g.details.trim();
+    $("#cmpRequest").value = "I am writing to " + g.who.toLowerCase() + ". The situation: " + g.topic.toLowerCase() +
+      ". What I would like to happen: " + g.goal.toLowerCase() + "." + (details ? " Details to include: " + details : "");
+    $("#cmpChannel").value = g.channel; $("#cmpContext").value = g.context; $("#cmpTone").value = g.tone;
+    $("#cmpGo").click();
+  });
+  /* show the normal button state and any error inside the guided card */
+  new MutationObserver(() => { gErr.textContent = $("#cmpErr").textContent; }).observe($("#cmpErr"), { childList: true, characterData: true, subtree: true });
+  new MutationObserver(() => { const b = $("#cmpGo").disabled; gGo.disabled = b; gGo.textContent = b ? "Working on it…" : "Write it"; })
+    .observe($("#cmpGo"), { attributes: true, attributeFilter: ["disabled"] });
+
+  const modeBar = h("div", { class: "subtabs", role: "group", "aria-label": "How would you like to start?" });
+  function setMode(guided) {
+    $$("button", modeBar).forEach((b) => b.setAttribute("aria-pressed", String((b.dataset.mode === "guide") === guided)));
+    guideCard.hidden = !guided; presetsCard.hidden = guided; requestCard.hidden = guided;
+    if (guided) renderGuide();
+  }
+  [["guide", "Guide me"], ["own", "I'll write it myself"]].forEach(([k, label]) =>
+    modeBar.append(h("button", { type: "button", class: "sub", "data-mode": k, onclick: () => setMode(k === "guide") }, label)));
+  presetsCard.before(modeBar, guideCard);
+  setMode(true);
+
   $("#cmpClear").addEventListener("click", () => {
     $("#cmpRequest").value = ""; $("#cmpMessage").value = ""; $("#cmpOut").textContent = ""; $("#cmpErr").textContent = "";
     cmpActive = null; renderPresets();
