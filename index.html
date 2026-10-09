@@ -92,6 +92,7 @@
   .error { color: var(--danger); min-height: 1.3em; margin-top: 10px; font-size: .95rem; }
   .notice { font-size: .88rem; color: var(--muted); margin-top: 10px; }
   .empty { color: var(--muted); }
+  .welcome { font-family: var(--display); font-weight: 600; color: var(--sage); background: var(--sage-soft); border-radius: var(--radius); padding: 12px 18px; margin: 0 0 18px; }
 
   /* Sub tabs and chips */
   .subtabs { display: inline-flex; gap: 4px; padding: 4px; background: var(--bg); border: 1.5px solid var(--line); border-radius: 999px; margin-bottom: 14px; }
@@ -201,15 +202,15 @@
   <div class="tabbar" id="tabbar" role="tablist" aria-label="UnburdenMe tools">
     <span class="indicator" id="indicator" aria-hidden="true"></span>
     <button class="tab" role="tab" id="tab-companion" data-tab="companion" aria-selected="true" aria-controls="panel-companion">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h11a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H9l-4 3v-3H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/><path d="M19 9h1a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2v2l-3-2h-4a2 2 0 0 1-2-2"/></svg>Companion</button>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h11a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H9l-4 3v-3H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/><path d="M19 9h1a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2v2l-3-2h-4a2 2 0 0 1-2-2"/></svg>Write</button>
     <button class="tab" role="tab" id="tab-priorities" data-tab="priorities" aria-selected="false" aria-controls="panel-priorities">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 6h11M10 12h11M10 18h11"/><path d="M3 6l1.5 1.5L7 5M3 12l1.5 1.5L7 11M3 18l1.5 1.5L7 17"/></svg>Priorities</button>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 6h11M10 12h11M10 18h11"/><path d="M3 6l1.5 1.5L7 5M3 12l1.5 1.5L7 11M3 18l1.5 1.5L7 17"/></svg>Prioritise</button>
     <button class="tab" role="tab" id="tab-summary" data-tab="summary" aria-selected="false" aria-controls="panel-summary">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18M6 10h12M9 15h6M11 20h2"/></svg>Micro Summary</button>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18M6 10h12M9 15h6M11 20h2"/></svg>Summarise</button>
     <button class="tab" role="tab" id="tab-solver" data-tab="solver" aria-selected="false" aria-controls="panel-solver">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="4.5" r="2"/><path d="M12 6.5V12M12 12L5.5 17M12 12l6.5 5"/><circle cx="5" cy="19" r="2"/><circle cx="19" cy="19" r="2"/></svg>Problem Solver</button>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="4.5" r="2"/><path d="M12 6.5V12M12 12L5.5 17M12 12l6.5 5"/><circle cx="5" cy="19" r="2"/><circle cx="19" cy="19" r="2"/></svg>Solve</button>
     <button class="tab" role="tab" id="tab-prep" data-tab="prep" aria-selected="false" aria-controls="panel-prep">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 13l2 2 4-4"/></svg>Prep</button>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 13l2 2 4-4"/></svg>Prepare</button>
   </div>
 </div>
 
@@ -218,7 +219,8 @@
   <!-- ============ 1. COMPANION ============ -->
   <section class="panel" id="panel-companion" role="tabpanel" aria-labelledby="tab-companion">
     <div class="panel-head">
-      <h1>Companion</h1>
+      <p class="welcome">A calm place to manage your workload and find the right words. Free, no account, nothing stored on our side.</p>
+      <h1>Write</h1>
       <p>Find the right words for an email, message, letter or phone call, or draft a reply to one you've received.</p>
     </div>
 
@@ -259,7 +261,7 @@
   <!-- ============ 2. PRIORITIES ============ -->
   <section class="panel" id="panel-priorities" role="tabpanel" aria-labelledby="tab-priorities" hidden>
     <div class="panel-head">
-      <h1>Priorities</h1>
+      <h1>Prioritise</h1>
       <p>Add the messages, emails and tasks on your plate, and see what needs attention first.</p>
     </div>
     <div class="alerts" id="alerts" role="status"></div>
@@ -285,16 +287,12 @@
       </form>
     </div>
 
-    <div class="card">
-      <h2>Your list</h2>
-      <div id="gaugeBox"></div>
-      <ul class="tasks" id="taskList"></ul>
-      <div class="actions" id="listActions" hidden>
-        <button class="ghost" id="allIcs" type="button">Add all deadlines to my calendar</button>
-        <button class="ghost" id="clearDone" type="button">Remove completed</button>
+<h2>Your list</h2>
+      <div class="subtabs" id="listViews" role="group" aria-label="List view">
+        <button class="sub" type="button" data-view="top3" aria-pressed="true">Today's top 3</button>
+        <button class="sub" type="button" data-view="all" aria-pressed="false">Everything</button>
       </div>
-      <p class="notice">Your list is saved in this browser on this device only.</p>
-    </div>
+      <p class="notice" id="viewNote"></p>
 
     <div class="card">
       <h2>Priority summary</h2>
@@ -309,7 +307,7 @@
   <!-- ============ 3. MICRO SUMMARY ============ -->
   <section class="panel" id="panel-summary" role="tabpanel" aria-labelledby="tab-summary" hidden>
     <div class="panel-head">
-      <h1>Micro Summary</h1>
+      <h1>Summarise</h1>
       <p>Turn long emails, message threads, reports and meeting notes into the few points you need, with actions, decisions and deadlines picked out.</p>
     </div>
     <div class="card">
@@ -344,7 +342,7 @@
   <!-- ============ 4. PROBLEM SOLVER ============ -->
   <section class="panel" id="panel-solver" role="tabpanel" aria-labelledby="tab-solver" hidden>
     <div class="panel-head">
-      <h1>Problem Solver</h1>
+      <h1>Solve</h1>
       <p>Describe what you're facing and get three different ways forward, each with pros, cons and clear next steps.</p>
     </div>
     <div class="card">
@@ -364,7 +362,7 @@
   <!-- ============ 5. PREP ============ -->
   <section class="panel" id="panel-prep" role="tabpanel" aria-labelledby="tab-prep" hidden>
     <div class="panel-head">
-      <h1>Prep</h1>
+      <h1>Prepare</h1>
       <p>Get a simple, personal checklist for an event, meeting, interview or key task.</p>
     </div>
     <div class="card">
@@ -625,7 +623,7 @@
   }
 
   /* ---------- saved notes and recent results ---------- */
-  const KIND = { companion: "Companion", priorities: "Priorities", summary: "Micro Summary", solver: "Problem Solver", prep: "Prep" };
+  const KIND = { companion: "Companion", priorities: "Prioritise", summary: "Summarise", solver: "Solve", prep: "Prepare" };
   function updateSavedCount() {
     const n = store.get(KEYS.saved, []).length; const c = $("#savedCount");
     c.textContent = n; c.hidden = n === 0;
@@ -891,13 +889,36 @@
     download(name + ".ics", body, "text/calendar");
   }
 
+/* Today's top 3: overdue or due today first, then priority, then deadline */
+  let listView = "top3";
+  function topThree(open) {
+    const endOfToday = new Date(); endOfToday.setHours(23, 59, 59, 999);
+    const when = (t) => (t.deadline ? new Date(t.deadline).getTime() : Infinity);
+    const cmp = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
+    const today = (t) => (when(t) <= endOfToday.getTime() ? 0 : 1);
+    return open.slice().sort((a, b) => cmp(today(a), today(b)) || cmp(PRI[a.priority], PRI[b.priority]) || cmp(when(a), when(b))).slice(0, 3);
+  }
+  function syncListView(top, open, shown, gb) {
+    $$("#listViews .sub").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.view === listView)));
+    $("#viewNote").textContent = top
+      ? "Just the few things that matter most today. Anything overdue or due today comes first, then by priority."
+      : "Everything you've added, with the most pressing first.";
+    if (!top || !tasks.length) return;
+    const more = open.length - shown.length;
+    gb.textContent = "";
+    gb.append(h("p", { class: "gauge-text" }, !open.length ? "Nothing open right now. Nice work."
+      : more > 0 ? more + " more " + (more === 1 ? "is" : "are") + " waiting on your full list." : "That's everything for now."));
+  }
+  $$("#listViews .sub").forEach((b) => b.addEventListener("click", () => { listView = b.dataset.view; renderTasks(); }));
+
   function renderTasks() {
+
     const list = $("#taskList"); list.textContent = "";
     const open = tasks.filter((t) => !t.done);
     const count = (p) => open.filter((t) => t.priority === p).length;
     const gb = $("#gaugeBox"); gb.textContent = "";
     if (!tasks.length) {
-      gb.append(h("p", { class: "empty" }, "Nothing here yet. Add your first item above."));
+      gb.append(h("p", { class: "empty" }, "Nothing here yet. Add your first item to get started."));
     } else {
       if (open.length) {
         gb.append(h("div", { class: "gauge", role: "img", "aria-label": "Open items by priority" },
@@ -907,7 +928,10 @@
         ? open.length + " open: " + count("high") + " high, " + count("mid") + " mid, " + count("low") + " low"
         : "All done. Nice work."));
     }
-    sortTasks(tasks).forEach((t) => {
+const top = listView === "top3";
+    const shown = top ? topThree(open) : sortTasks(tasks);
+    syncListView(top, open, shown, gb);
+    shown.forEach((t) => {
       const overdue = t.deadline && !t.done && new Date(t.deadline).getTime() < Date.now();
       const actions = [];
       if (t.deadline) {
@@ -915,7 +939,7 @@
         actions.push(h("button", { type: "button", class: "chip-btn", onclick: () => downloadIcs([t], slug(t.title)) }, "Other calendars"));
       }
       actions.push(h("button", { type: "button", class: "chip-btn", "aria-label": "Delete " + t.title, onclick: () => { tasks = tasks.filter((x) => x.id !== t.id); saveTasks(); } }, "Delete"));
-      const cb = h("input", { type: "checkbox", "aria-label": "Mark as done: " + t.title, onchange: (e) => { t.done = e.target.checked; saveTasks(); } });
+      const cb = h("input", { type: "checkbox", "aria-label": "Mark as done: " + t.title, onchange: (e) => { t.done = e.target.checked; saveTasks(); if (t.done) toast("Ticked off. Well done."); } });
       if (t.done) cb.checked = true;
       list.append(h("li", { class: "task" + (t.done ? " done" : "") }, cb,
         h("div", null, h("div", { class: "t-title" }, t.title),
@@ -926,7 +950,7 @@
             t.reminder ? h("span", null, "Reminder " + fmt(t.reminder)) : null)),
         h("div", { class: "t-actions" }, actions)));
     });
-    $("#listActions").hidden = !tasks.length;
+$("#listActions").hidden = top || !tasks.length;
     $("#allIcs").hidden = !tasks.some((t) => t.deadline && !t.done);
     $("#clearDone").hidden = !tasks.some((t) => t.done);
   }
@@ -1121,7 +1145,7 @@
       opts = parts.slice(1);
     }
     opts.slice(0, 3).forEach((o, i) => out.append(resultCard({ title: opts.length === 1 ? "Your result" : "Solution " + (i + 1), text: o, snap, kind: "solver", saveTitle: "Solution" })));
-    addRecent({ kind: "solver", title: "Problem Solver options", text: opts.slice(0, 3).map((o, i) => "Solution " + (i + 1) + "\n" + o).join("\n\n") });
+    addRecent({ kind: "solver", title: "Solutions", text: opts.slice(0, 3).map((o, i) => "Solution " + (i + 1) + "\n" + o).join("\n\n") });
     out.scrollIntoView({ behavior: "smooth", block: "start" });
   }));
   $("#solClear").addEventListener("click", () => { $("#solText").value = ""; $("#solOut").textContent = ""; $("#solErr").textContent = ""; });
