@@ -975,10 +975,10 @@ body, refineBar, refineErr, tasksBox, o.share ? shareBar(current, o.title) : nul
     guideCard.hidden = !guided; presetsCard.hidden = guided; requestCard.hidden = guided;
     if (guided) renderGuide();
   }
-  [["guide", "Guide me"], ["own", "I'll write it myself"]].forEach(([k, label]) =>
+  [["own", "I'll write it myself"], ["guide", "Quick select"]].forEach(([k, label]) =>
     modeBar.append(h("button", { type: "button", class: "sub", "data-mode": k, onclick: () => setMode(k === "guide") }, label)));
   presetsCard.before(modeBar, guideCard);
-  setMode(true);
+  setMode(false);
 
   $("#cmpClear").addEventListener("click", () => {
     $("#cmpRequest").value = ""; $("#cmpMessage").value = ""; $("#cmpOut").textContent = ""; $("#cmpErr").textContent = "";
